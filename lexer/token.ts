@@ -27,9 +27,9 @@ export const PUNCT_TO_CHAR: Record<Punct['kind'], string> = {
 } 
 export type RelOp = {
   kind: 'EQ'
-    | 'GE'
+    | 'GTE'
     | 'GT'
-    | 'LE'
+    | 'LTE'
     | 'LT'
     | 'NEQ'
     | 'AND'
@@ -42,8 +42,8 @@ export type RelOp = {
 export const RELOPS: { chars: string; kind: RelOp['kind'] }[] = [
   { chars: '==', kind: 'EQ' },
   { chars: '!=', kind: 'NEQ' },
-  { chars: '>=', kind: 'GE' },
-  { chars: '<=', kind: 'LE' },
+  { chars: '>=', kind: 'GTE' },
+  { chars: '<=', kind: 'LTE' },
   { chars: '&&', kind: 'AND' },
   { chars: '||', kind: 'OR' },
   { chars: '>', kind: 'GT' },
@@ -66,7 +66,7 @@ export const RELOP_BY_LEN: ReadonlyMap<number, Record<string, RelOp['kind']>> = 
 export const MAX_RELOP_LEN = Math.max(...RELOP_BY_LEN.keys());
 
 export type Position = { start: number, end: number, line: number; }
-export type Ident = { kind: 'IDENT', value: string; };
+export type Ident = { kind: 'IDENT', name: string; };
 export type Num = { kind: 'NUM', value: number; };
 export type EOF = { kind: 'EOF' };
 export type Located<T> = T & { position: Position,  };

@@ -1,11 +1,18 @@
 import { Cursor, type ICursor } from "./cursor";
 import { LexerUnknownCharError } from "./errors";
 import { isDigit, isLetter, isWhitespace, scanIdent, scanNumber } from "./scanners";
-import { MAX_RELOP_LEN, Punct, PUNCT_TO_CHAR, RELOP_BY_LEN, RelOp, Token } from "./token";
+import { MAX_RELOP_LEN, Punct, PUNCT_TO_CHAR, RELOP_BY_LEN, RelOp, Token, Ident, Kind, Num } from "./token";
 
 export interface ILexer {
-  scan: (src?: string) => Token[];
+  scan: (src: string) => Token[];
 }
+
+const makeToken = (
+  kind: Exclude<Kind, Ident['kind'] | Num['kind']>,
+  start: number,
+  end: number,
+  line: number = 1
+): Token => ({ kind, position: { start, end, line } });
 
 const PUNCT = Object.fromEntries(
   Object.entries(PUNCT_TO_CHAR).map(([kind, char]) => [char, kind])
@@ -21,33 +28,36 @@ export class Lexer implements ILexer {
   private cursor: ICursor;
   private scanners: Scanner[];
 
-  constructor(src?: string) {
+  constructor() {
     this.cursor = new Cursor();
-    if (src) this.cursor.setSource(src);
     this.scanners = [
       { test: isDigit, scan: (c) => scanNumber(this.cursor, c) },
       { test: isLetter, scan: (c) => scanIdent(this.cursor, c) },
     ];
   }
 
-  scan(src?: string): Token[] {
-    if (this.cursor.getSource() === undefined && src) this.cursor.setSource(src);
+  public scan(src: string): Token[] {
+    this.tokens = [];
+    this.cursor.setSource(src);
     let c: string | undefined;
     while ((c = this.cursor.current()) !== undefined) {
       const start = this.cursor.column();
       const line = this.cursor.line();
 
       const relop = this.matchRelOp(c);
-      if (isWhitespace(c)) {this.cursor.advance(); continue;} 
+      if (isWhitespace(c)) {
+        this.cursor.advance();
+        continue;
+      }
       if (relop) {
         const [kind, len] = relop;
-        this.tokens.push({ kind, position: { start, end: start + len, line } });
+        this.tokens.push(makeToken(kind, start, start + len, line));
         this.cursor.advance(len);
         continue;
       }
 
       if (PUNCT[c]) {
-        this.tokens.push({ kind: PUNCT[c], position: { start, end: start + 1, line } });
+        this.tokens.push(makeToken(PUNCT[c], start, start + 1, line));
         this.cursor.advance();
         continue;
       }
@@ -58,9 +68,9 @@ export class Lexer implements ILexer {
         continue;
       }
 
-      throw new LexerUnknownCharError(c, this.cursor.column());
+      throw new LexerUnknownCharError(c, start);
     }
-    this.tokens.push({ kind: "EOF", position: { start: this.cursor.column(), end: this.cursor.column(), line: this.cursor.line() } });
+    this.tokens.push(makeToken("EOF", this.cursor.column(), this.cursor.column(), this.cursor.line()));
     return this.tokens;
   }
 

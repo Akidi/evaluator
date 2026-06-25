@@ -1,9 +1,9 @@
 import { CursorSourceError } from "./errors";
 
 export interface ICursor {
-  getSource: () => string | undefined;
+  getSource: () => string;
   setSource: (src: string) => void;
-  current: () => string | undefined;
+  current: () => string;
   peek: (offset?: number) => string | undefined;
   advance: (num?: number) => void;
   column: () => number;
@@ -12,22 +12,23 @@ export interface ICursor {
 
 export class Cursor implements ICursor {
   private index: number = 0;
-  private src: string | undefined;
+  private src: string = "";
 
   setSource(src: string): void {
+    this.index = 0;
     this.src = src;
   }
 
-  getSource(): string | undefined {
+  getSource(): string {
     return this.src;
   }
 
-  current(): string | undefined {
+  current(): string {
     if (!this.src) throw new CursorSourceError()
     return this.src[this.index];
   }
 
-  peek(offset: number = 1): string | undefined {
+  peek(offset: number = 1): string {
     if (!this.src) throw new CursorSourceError()
     return this.src[this.index + offset];
   }

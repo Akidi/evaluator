@@ -1,19 +1,20 @@
 import { ICursor } from "./cursor";
+import { LexerDecimalError, LexerDuplicateDecimalError } from "./errors";
 import { Token } from "./token";
 
 export function scanIdent(cursor: ICursor, c: string): Token {
   let start: number = cursor.column();
   let line: number = cursor.line();
-  let value = c;
+  let name = c;
   cursor.advance();
   let next: string | undefined;
   while ((next = cursor.current()) !== undefined) {
     if (!isDigit(next) && !isLetter(next)) break;
-    value += next;
+    name += next;
     cursor.advance();
   }
 
-  return {kind: "IDENT", value, position: { start, end: cursor.column(), line }};
+  return {kind: "IDENT", name, position: { start, end: cursor.column(), line }};
 }
 
 export function scanNumber(cursor: ICursor, c: string): Token {
@@ -29,8 +30,8 @@ export function scanNumber(cursor: ICursor, c: string): Token {
     const peek = cursor.peek();
     
     if (!isDigitCheck && !isPeriod) break;
-    if (isPeriod && isFloat) throw new Error(`Duplicate period found at ${cursor.column()}`);
-    if (isPeriod && (!peek || !isDigit(peek))) throw new Error(`Dangling period at column ${cursor.column()}`)
+    if (isPeriod && isFloat) throw new LexerDuplicateDecimalError(cursor.column())
+    if (isPeriod && (!peek || !isDigit(peek))) throw new LexerDecimalError(cursor.column());
     if (isPeriod && !isFloat) isFloat = true;
     
     value += next;

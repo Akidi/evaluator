@@ -1,32 +1,29 @@
-export class LexerError extends Error {
-  constructor(message?: string) {
-    super(message);
-    this.name = "LexerError";
-  }
-}
+import { ProjectError } from "../shared/errors";
+
+export class LexerError extends ProjectError {}
 
 export class LexerUnknownCharError extends LexerError {
   constructor(char: string, column: number) {
-    const message = `Unexpected character '${char}' at column ${column}`;
-    super();
-    this.name = 'LexerUnknownCharError';
-    this.message = message;
+    super(`Unexpected character '${char}' at column ${column}.`);
   }
 }
 
-export class CursorError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "CursorError";
-    this.message = message;
+export class LexerDecimalError extends LexerError {
+  constructor(column: number) {
+    super(`Missing number either before or after a decimal @ column ${column} Must be in form of x.y`);
   }
 }
+
+export class LexerDuplicateDecimalError extends LexerError {
+  constructor(column: number) {
+    super(`Duplicate decimal located @ column ${column} Numbers can contain only 1 decimal.`);
+  }
+}
+
+export class CursorError extends ProjectError {}
 
 export class CursorSourceError extends CursorError {
   constructor() {
-    const message = "Cursor Source missing use setSource to set the source before trying again.";
-    super(message);
-    this.name = 'CursorSourceError';
-    this.message = message;
+    super("Cursor Source missing use setSource to set the source before trying again.");
   }
 }
