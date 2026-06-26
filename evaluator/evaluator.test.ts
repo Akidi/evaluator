@@ -7,6 +7,9 @@ import { IParser } from "../parser/types";
 import { Parser } from "../parser/parser";
 
 const evaluator: IEvaluator = new Evaluator();
+const lexer = new Lexer();
+const parser = new Parser();
+
 
 describe("Evaluator", () => {
   it("evaluates a Num node to its value", () => {
