@@ -8,7 +8,11 @@ export type CallNode  = { type: 'Call', callee: Node, args: Node[] };
 export type TernaryNode = { type: 'Ternary', test: Node, ifTrue: Node, ifFalse: Node };
 
 export type Node = NumNode | IdentNode | UnaryNode | BinaryNode | CallNode | TernaryNode;
+export type IdentItem = {
+  name: string
+  type: 'FN' | 'VAR';
+}
 
 export interface IParser {
-  parse: (tokens: Token[]) => Node;
+  parse: (tokens: Token[]) => [Node, IdentItem[]];
 }

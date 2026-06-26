@@ -1,71 +1,107 @@
 import { describe, expect, it } from "vitest";
 import { Parser } from "./parser";
-import { IParser, Node } from "./types";
+import { IParser } from "./types";
 import { Token } from "../lexer/token";
-import { Lexer } from "../lexer/lexer";
+import { ILexer, Lexer } from "../lexer/lexer";
 
-// A quick helper function to reduce boilerplate when creating mock tokens
-function mockToken(partial: Partial<Token> & { kind: Token["kind"] }): Token {
-  return {
-    position: { start: 0, end: 0, line: 1 },
-    ...partial,
-  } as Token;
-}
+const lexer: ILexer = new Lexer();
+const parser: IParser = new Parser();
 
 describe("Parser", () => {
+  it("should error on connecting idents without punctuation between.", () => {
+    const tokens = lexer.scan("CON A B");
+    expect(() => parser.parse(tokens)).toThrow();
+  })
   it("should return a NumNode", () => {
-    const parser: IParser = new Parser();
+    const tokens: Token[] = lexer.scan("1");
     
-    const tokens: Token[] = [
-      mockToken({ kind: "NUM", value: 1 }),
-      mockToken({ kind: "EOF" }),
-    ];
-    
-    const parsed: Node = parser.parse(tokens);
+    const [parsed] = parser.parse(tokens);
     expect(parsed).toEqual({ type: 'Num', value: 1 });
   });
 
   it("should return a IdentNode", () => {
-    const parser: IParser = new Parser();
+    const tokens: Token[] = lexer.scan("ident");
 
-    const tokens: Token[] = [
-      mockToken({ kind: "IDENT", name: "ident" }),
-      mockToken({ kind: "EOF" }),
-    ];
-
-    const parsed = parser.parse(tokens);
+    const [parsed] = parser.parse(tokens);
     expect(parsed).toEqual({ type: 'Ident', name: 'ident' });
   });
 
   it("resets position on reuse, with no leakage from a prior parse.", () => {
-    const parser: IParser = new Parser();
+    let tokens: Token[] = lexer.scan("CON")
+    const [first] = parser.parse(tokens);
 
-    const firstTokens: Token[] = [
-      mockToken({ kind: "IDENT", name: "CON" }),
-      mockToken({ kind: "EOF" }),
-    ];
-    const first = parser.parse(firstTokens);
-
-    const secondTokens: Token[] = [
-      mockToken({ kind: "NUM", value: 1 }),
-      mockToken({ kind: "EOF" }),
-    ];
-    const second = parser.parse(secondTokens);
+    tokens = lexer.scan("1")
+    const [second] = parser.parse(tokens);
 
     expect(first).toEqual({ type: "Ident", name: "CON" });
     expect(second).toEqual({ type: "Num", value: 1 });
+  });
+
+  it("should return an identList with a single ident as VAR", () => {
+    let tokens: Token[] = lexer.scan("CON");
+    const [_, identList] = parser.parse(tokens);
+
+    expect(identList).toEqual([
+      {name: 'CON', type: 'VAR'}
+    ])
+  });
+
+  it("should return an identList with multiple VAR", () => {
+    let tokens: Token[] = lexer.scan("CON&&A>B");
+    const [_, identList] = parser.parse(tokens);
+
+    expect(identList).toEqual([
+      {name: 'B', type: 'VAR'},
+      {name: 'A', type: 'VAR'},
+      {name: 'CON', type: 'VAR'},
+    ])
+  });
+
+  it("should return an identList with FN", () => {
+    let tokens: Token[] = lexer.scan("math(1)");
+    const [_, identList] = parser.parse(tokens);
+
+    expect(identList).toEqual([
+      {name: 'math', type: 'FN'}
+    ])
+  });
+
+  it("should return an identList multiple FN", () => {
+    let tokens: Token[] = lexer.scan("math(1)>Max(5+1,LEN(5325))||Min(1, 3)");
+    const [_, identList] = parser.parse(tokens);
+
+    expect(identList).toEqual([
+      {name: 'math', type: 'FN'},
+      {name: 'LEN', type: 'FN'},
+      {name: 'Max', type: 'FN'},
+      {name: 'Min', type: 'FN'},
+    ])
+  });
+
+  it("should return an identList mixxed Call and Var", () => {
+    let tokens: Token[] = lexer.scan("math(1, POW, BOB, 11 + DEX)>Max(5+1,LEN(5325 + CON))||Min(1, 3 + WIS - INT)");
+    const [_, identList] = parser.parse(tokens);
+
+    expect(identList).toEqual([
+      {name: 'POW', type: 'VAR'},
+      {name: 'BOB', type: 'VAR'},
+      {name: 'DEX', type: 'VAR'},
+      {name: 'math', type: 'FN'},
+      {name: 'CON', type: 'VAR'},
+      {name: 'LEN', type: 'FN'},
+      {name: 'Max', type: 'FN'},
+      {name: 'WIS', type: 'VAR'},
+      {name: 'INT', type: 'VAR'},
+      {name: 'Min', type: 'FN'},
+    ])
   });
 });
 
 describe("Parser (Pratt Parsing Tests)", () => {
   it("should parse a single number literal", () => {
-    const parser = new Parser();
-    const tokens: Token[] = [
-      mockToken({ kind: "NUM", value: 42 }),
-      mockToken({ kind: "EOF" }),
-    ];
+    const tokens: Token[] = lexer.scan("42");
 
-    const ast = parser.parse(tokens);
+    const [ast] = parser.parse(tokens);
 
     expect(ast).toEqual({
       type: "Num",
@@ -74,18 +110,9 @@ describe("Parser (Pratt Parsing Tests)", () => {
   });
 
   it("should respect operator precedence (1 + 2 * 3)", () => {
-    const parser = new Parser();
-    // 1 + 2 * 3
-    const tokens: Token[] = [
-      mockToken({ kind: "NUM", value: 1 }),
-      mockToken({ kind: "PLUS" }),
-      mockToken({ kind: "NUM", value: 2 }),
-      mockToken({ kind: "STAR" }),
-      mockToken({ kind: "NUM", value: 3 }),
-      mockToken({ kind: "EOF" }),
-    ];
+    const tokens: Token[] = lexer.scan("1 + 2 * 3")
 
-    const ast = parser.parse(tokens);
+    const [ast] = parser.parse(tokens);
 
     // Multiplication (*) should bind tighter, becoming the right-child of the addition (+)
     expect(ast).toEqual({
@@ -102,17 +129,9 @@ describe("Parser (Pratt Parsing Tests)", () => {
   });
 
   it("should handle unary operators with higher precedence (-5 + 2)", () => {
-    const parser = new Parser();
-    // -5 + 2
-    const tokens: Token[] = [
-      mockToken({ kind: "MINUS" }),
-      mockToken({ kind: "NUM", value: 5 }),
-      mockToken({ kind: "PLUS" }),
-      mockToken({ kind: "NUM", value: 2 }),
-      mockToken({ kind: "EOF" }),
-    ];
+    const tokens: Token[] = lexer.scan("-5 + 2")
 
-    const ast = parser.parse(tokens);
+    const [ast] = parser.parse(tokens);
 
     // The unary minus should attach to the 5 first, before adding 2
     expect(ast).toEqual({
@@ -128,21 +147,8 @@ describe("Parser (Pratt Parsing Tests)", () => {
   });
 
   it("should handle grouping with parentheses to override precedence (1 + 2) * 3", () => {
-    const parser: IParser = new Parser();
-
-    // ( 1 + 2 ) * 3
-    const tokens: Token[] = [
-      mockToken({ kind: "LPAREN" }),
-      mockToken({ kind: "NUM", value: 1 }),
-      mockToken({ kind: "PLUS" }),
-      mockToken({ kind: "NUM", value: 2 }),
-      mockToken({ kind: "RPAREN" }),
-      mockToken({ kind: "STAR" }),
-      mockToken({ kind: "NUM", value: 3 }),
-      mockToken({ kind: "EOF" }),
-    ];
-
-    const parsed = parser.parse(tokens);
+    const tokens: Token[] =lexer.scan("(1 + 2) * 3")
+    const [parsed] = parser.parse(tokens);
 
     // Because of the parentheses, the addition (+) should be deep inside the left child of the multiplication (*)
     expect(parsed).toEqual({
@@ -159,15 +165,9 @@ describe("Parser (Pratt Parsing Tests)", () => {
   });
 
   it("should handle unary MINUS negation (-1)", () => {
-    const parser: IParser = new Parser();
+    const tokens: Token[] = lexer.scan("-1")
 
-    const tokens: Token[] = [
-      mockToken({ kind: "MINUS" }),
-      mockToken({ kind: "NUM", value: 1 }),
-      mockToken({ kind: "EOF" }),
-    ];
-
-    const parsed = parser.parse(tokens);
+    const [parsed] = parser.parse(tokens);
     expect(parsed).toEqual({
       type: "Unary",
       op: "MINUS",
@@ -178,13 +178,9 @@ describe("Parser (Pratt Parsing Tests)", () => {
   it("should handle unary NOT operator (!ident)", () => {
     const parser: IParser = new Parser();
 
-    const tokens: Token[] = [
-      mockToken({ kind: "NOT" }),
-      mockToken({ kind: "IDENT", name: "ident" }),
-      mockToken({ kind: "EOF" }),
-    ];
+    const tokens: Token[] = lexer.scan("!ident");
 
-    const parsed = parser.parse(tokens);
+    const [parsed] = parser.parse(tokens);
     expect(parsed).toEqual({
       type: "Unary",
       op: "NOT",
@@ -195,13 +191,9 @@ describe("Parser (Pratt Parsing Tests)", () => {
   it("should handle unary MINUS operator (-ident)", () => {
     const parser: IParser = new Parser();
 
-    const tokens: Token[] = [
-      mockToken({ kind: "MINUS" }),
-      mockToken({ kind: "IDENT", name: "CON" }),
-      mockToken({ kind: "EOF" }),
-    ];
+    const tokens: Token[] = lexer.scan("-CON");
 
-    const parsed = parser.parse(tokens);
+    const [parsed] = parser.parse(tokens);
     expect(parsed).toEqual({
       type: "Unary",
       op: "MINUS",
@@ -210,18 +202,9 @@ describe("Parser (Pratt Parsing Tests)", () => {
   });
 
   it("should parse a function call with a single argument (abs(1))", () => {
-    const parser: IParser = new Parser();
+    const tokens: Token[] = lexer.scan("abs(1)")
 
-    // abs ( 1 )
-    const tokens: Token[] = [
-      mockToken({ kind: "IDENT", name: "abs" }),
-      mockToken({ kind: "LPAREN" }),
-      mockToken({ kind: "NUM", value: 1 }),
-      mockToken({ kind: "RPAREN" }),
-      mockToken({ kind: "EOF" }),
-    ];
-
-    const parsed = parser.parse(tokens);
+    const [parsed] = parser.parse(tokens);
 
     expect(parsed).toEqual({
       type: "Call",
@@ -231,20 +214,9 @@ describe("Parser (Pratt Parsing Tests)", () => {
   });
 
   it("should parse a function call with multiple arguments (pow(2, 3))", () => {
-    const parser: IParser = new Parser();
+    const tokens: Token[] = lexer.scan("pow(2,3)");
 
-    // pow ( 2 , 3 )
-    const tokens: Token[] = [
-      mockToken({ kind: "IDENT", name: "pow" }),
-      mockToken({ kind: "LPAREN" }),
-      mockToken({ kind: "NUM", value: 2 }),
-      mockToken({ kind: "COMMA" }),
-      mockToken({ kind: "NUM", value: 3 }),
-      mockToken({ kind: "RPAREN" }),
-      mockToken({ kind: "EOF" }),
-    ];
-
-    const parsed = parser.parse(tokens);
+    const [parsed] = parser.parse(tokens);
 
     expect(parsed).toEqual({
       type: "Call",
@@ -260,21 +232,9 @@ describe("Parser (Pratt Parsing Tests)", () => {
     const parser: IParser = new Parser();
 
     // max ( 1 + 2 , 3 * 4 )
-    const tokens: Token[] = [
-      mockToken({ kind: "IDENT", name: "max" }),
-      mockToken({ kind: "LPAREN" }),
-      mockToken({ kind: "NUM", value: 1 }),
-      mockToken({ kind: "PLUS" }),
-      mockToken({ kind: "NUM", value: 2 }),
-      mockToken({ kind: "COMMA" }),
-      mockToken({ kind: "NUM", value: 3 }),
-      mockToken({ kind: "STAR" }),
-      mockToken({ kind: "NUM", value: 4 }),
-      mockToken({ kind: "RPAREN" }),
-      mockToken({ kind: "EOF" }),
-    ];
+    const tokens: Token[] = lexer.scan("max(1+2, 3*4)");
 
-    const parsed = parser.parse(tokens);
+    const [parsed] = parser.parse(tokens);
 
     expect(parsed).toEqual({
       type: "Call",
@@ -297,16 +257,9 @@ describe("Parser (Pratt Parsing Tests)", () => {
   });
 
   it("should parse logical OR (1 || 2)", () => {
-    const parser = new Parser();
-    // 1 || 2
-    const tokens: Token[] = [
-      mockToken({ kind: "NUM", value: 1 }),
-      mockToken({ kind: "OR" }),
-      mockToken({ kind: "NUM", value: 2 }),
-      mockToken({ kind: "EOF" }),
-    ];
+    const tokens: Token[] = lexer.scan("1 || 2");
 
-    const ast = parser.parse(tokens);
+    const [ast] = parser.parse(tokens);
 
     expect(ast).toEqual({
       type: "Binary",
@@ -317,18 +270,8 @@ describe("Parser (Pratt Parsing Tests)", () => {
   });
 
   it("should bind AND tighter than OR (1 || 2 && 3)", () => {
-    const parser = new Parser();
-    // 1 || 2 && 3
-    const tokens: Token[] = [
-      mockToken({ kind: "NUM", value: 1 }),
-      mockToken({ kind: "OR" }),
-      mockToken({ kind: "NUM", value: 2 }),
-      mockToken({ kind: "AND" }),
-      mockToken({ kind: "NUM", value: 3 }),
-      mockToken({ kind: "EOF" }),
-    ];
-
-    const ast = parser.parse(tokens);
+    const tokens: Token[] = lexer.scan("(1 || 2 && 3)");
+    const [ast] = parser.parse(tokens);
 
     // AND (bp 2) binds tighter than OR (bp 1), so it nests as the right child of OR
     expect(ast).toEqual({
@@ -345,18 +288,9 @@ describe("Parser (Pratt Parsing Tests)", () => {
   });
 
   it("should treat division as left-associative (8 / 4 / 2)", () => {
-    const parser = new Parser();
-    // 8 / 4 / 2
-    const tokens: Token[] = [
-      mockToken({ kind: "NUM", value: 8 }),
-      mockToken({ kind: "SLASH" }),
-      mockToken({ kind: "NUM", value: 4 }),
-      mockToken({ kind: "SLASH" }),
-      mockToken({ kind: "NUM", value: 2 }),
-      mockToken({ kind: "EOF" }),
-    ];
+    const tokens: Token[] = lexer.scan("8 / 4 / 2");
 
-    const ast = parser.parse(tokens);
+    const [ast] = parser.parse(tokens);
 
     // Left-associative: groups as (8 / 4) / 2, so the first division is the left child
     expect(ast).toEqual({
@@ -372,11 +306,15 @@ describe("Parser (Pratt Parsing Tests)", () => {
     });
   });
 
+  it("should handle modulo ( % ) correctly.", () => {
+
+  })
+
   it("should treat exponent as right-associative (2 ^ 3 ^ 2)", () => {
     const parser = new Parser();
     const lexer = new Lexer();
 
-    const ast = parser.parse(lexer.scan("2 ^ 3 ^ 2"));
+    const [ast] = parser.parse(lexer.scan("2 ^ 3 ^ 2"));
 
 
     expect(ast).toEqual({
@@ -392,64 +330,151 @@ describe("Parser (Pratt Parsing Tests)", () => {
     });
   });
 
-  it("should parse a complex expression across every implemented tier", () => {
-    const parser = new Parser();
-    const lexer = new Lexer();
-    const ast = parser.parse(lexer.scan("1 + 2 * 3 ^ 2 && max(4, 5) || -6"));
+  it("should handle ( and [ as grouping with correct expect.", () => {
+    const tokens = lexer.scan("A * (a + [B - c] ^ D) / d");
+    const [ast] = parser.parse(tokens);
 
-    // Reads as: ((1 + 2 * (3 ^ 2)) && max(4, 5)) || (-6)
+    // Reads as: (A * (a + ((B - c) ^ D))) / d
     expect(ast).toEqual({
       type: "Binary",
-      op: "OR",
+      op: "SLASH",
       left: {
+        type: "Binary",
+        op: "STAR",
+        left: { type: "Ident", name: "A" },
+        right: {
+          type: "Binary",
+          op: "PLUS",
+          left: { type: "Ident", name: "a" },
+          right: {
+            type: "Binary",
+            op: "CARROT",
+            left: {
+              type: "Binary",
+              op: "MINUS",
+              left: { type: "Ident", name: "B" },
+              right: { type: "Ident", name: "c" },
+            },
+            right: { type: "Ident", name: "D" },
+          },
+        },
+      },
+      right: { type: "Ident", name: "d" },
+    });
+  })
+
+  it("should parse a stress-test expression covering every implemented token", () => {
+
+    // Exercises, in one pass, every entry in INFIX_BP and PREFIX_BP. Individual
+    // tiers already have focused tests above; this confirms they all still slot
+    // together correctly by binding power when combined.
+    const [ast] = parser.parse(
+      lexer.scan(
+        "!a && (1 + 2 - 3) / 4 ^ 2 * 5 == max(6, 7) ? 16 : -8 > 9 && 10 < 11 || 12 >= 13 <= 14 != 15"
+      )
+    );
+
+    // Reads as:
+    //   ( (!a) && ( ((1 + 2 - 3) / (4 ^ 2) * 5) == max(6, 7) ) )
+    //   ? 16
+    //   : ( (-8 > 9) && (10 < 11) ) || ( ((12 >= 13) <= 14) != 15 )
+    expect(ast).toEqual({
+      type: "Ternary",
+      test: {
         type: "Binary",
         op: "AND",
         left: {
+          type: "Unary",
+          op: "NOT",
+          operand: { type: "Ident", name: "a" },
+        },
+        right: {
           type: "Binary",
-          op: "PLUS",
-          left: { type: "Num", value: 1 },
-          right: {
+          op: "EQ",
+          left: {
             type: "Binary",
             op: "STAR",
-            left: { type: "Num", value: 2 },
-            right: {
+            left: {
               type: "Binary",
-              op: "CARROT",
-              left: { type: "Num", value: 3 },
-              right: { type: "Num", value: 2 },
+              op: "SLASH",
+              left: {
+                type: "Binary",
+                op: "MINUS",
+                left: {
+                  type: "Binary",
+                  op: "PLUS",
+                  left: { type: "Num", value: 1 },
+                  right: { type: "Num", value: 2 },
+                },
+                right: { type: "Num", value: 3 },
+              },
+              right: {
+                type: "Binary",
+                op: "CARROT",
+                left: { type: "Num", value: 4 },
+                right: { type: "Num", value: 2 },
+              },
             },
+            right: { type: "Num", value: 5 },
+          },
+          right: {
+            type: "Call",
+            callee: { type: "Ident", name: "max" },
+            args: [
+              { type: "Num", value: 6 },
+              { type: "Num", value: 7 },
+            ],
+          },
+        },
+      },
+      ifTrue: { type: "Num", value: 16 },
+      ifFalse: {
+        type: "Binary",
+        op: "OR",
+        left: {
+          type: "Binary",
+          op: "AND",
+          left: {
+            type: "Binary",
+            op: "GT",
+            left: {
+              type: "Unary",
+              op: "MINUS",
+              operand: { type: "Num", value: 8 },
+            },
+            right: { type: "Num", value: 9 },
+          },
+          right: {
+            type: "Binary",
+            op: "LT",
+            left: { type: "Num", value: 10 },
+            right: { type: "Num", value: 11 },
           },
         },
         right: {
-          type: "Call",
-          callee: { type: "Ident", name: "max" },
-          args: [
-            { type: "Num", value: 4 },
-            { type: "Num", value: 5 },
-          ],
+          type: "Binary",
+          op: "NEQ",
+          left: {
+            type: "Binary",
+            op: "LTE",
+            left: {
+              type: "Binary",
+              op: "GTE",
+              left: { type: "Num", value: 12 },
+              right: { type: "Num", value: 13 },
+            },
+            right: { type: "Num", value: 14 },
+          },
+          right: { type: "Num", value: 15 },
         },
-      },
-      right: {
-        type: "Unary",
-        op: "MINUS",
-        operand: { type: "Num", value: 6 },
       },
     });
   });
 
-  // --- Not yet implemented: these are expected to fail until comparisons + ternary land ---
-
   it("should parse a less-than comparison (1 < 2)", () => {
-    const parser = new Parser();
-    // 1 < 2
-    const tokens: Token[] = [
-      mockToken({ kind: "NUM", value: 1 }),
-      mockToken({ kind: "LT" }),
-      mockToken({ kind: "NUM", value: 2 }),
-      mockToken({ kind: "EOF" }),
-    ];
+    const tokens: Token[] = lexer.scan("1<2");
 
-    const ast = parser.parse(tokens);
+    const [ast] = parser.parse(tokens);
 
     expect(ast).toEqual({
       type: "Binary",
@@ -460,16 +485,9 @@ describe("Parser (Pratt Parsing Tests)", () => {
   });
 
   it("should parse an equality comparison (1 == 2)", () => {
-    const parser = new Parser();
-    // 1 == 2
-    const tokens: Token[] = [
-      mockToken({ kind: "NUM", value: 1 }),
-      mockToken({ kind: "EQ" }),
-      mockToken({ kind: "NUM", value: 2 }),
-      mockToken({ kind: "EOF" }),
-    ];
+    const tokens: Token[] = lexer.scan("1==2");
 
-    const ast = parser.parse(tokens);
+    const [ast] = parser.parse(tokens);
 
     expect(ast).toEqual({
       type: "Binary",
@@ -480,81 +498,15 @@ describe("Parser (Pratt Parsing Tests)", () => {
   });
 
   it("should parse a ternary conditional (1 ? 2 : 3)", () => {
-    const parser = new Parser();
-    // 1 ? 2 : 3
-    const tokens: Token[] = [
-      mockToken({ kind: "NUM", value: 1 }),
-      mockToken({ kind: "QUESTION" }),
-      mockToken({ kind: "NUM", value: 2 }),
-      mockToken({ kind: "COLON" }),
-      mockToken({ kind: "NUM", value: 3 }),
-      mockToken({ kind: "EOF" }),
-    ];
+    const tokens: Token[] = lexer.scan("1?2:3")
 
-    const ast = parser.parse(tokens);
+    const [ast] = parser.parse(tokens);
 
     expect(ast).toEqual({
       type: "Ternary",
-      cond: { type: "Num", value: 1 },
-      then: { type: "Num", value: 2 },
-      else: { type: "Num", value: 3 },
+      test: { type: "Num", value: 1 },
+      ifTrue: { type: "Num", value: 2 },
+      ifFalse: { type: "Num", value: 3 },
     });
   });
-
-  /*
-  // STRESS TEST — the full target, including tiers not yet built (comparisons + ternary).
-  // Commented out so it stays inert in watch mode. Uncomment once `<`/`==` and the `? :`
-  // ternary are parsing, and it'll prove they slot into the binding-power order correctly.
-  //
-  // Encodes these assumptions — adjust the expected tree if you decide differently:
-  //   - ternary `? :` is the LOOSEST tier (looser than OR), so it wraps the whole thing
-  //   - comparison `<` (bp 4) binds tighter than OR/AND but looser than arithmetic
-  //   - the condition, then-branch, and else-branch are each a full sub-expression
-  //
-  it("should parse the full target: !a || b < c ? max(1, 2) ^ 2 : foo(d) && -e", () => {
-    const parser = new Parser();
-    const lexer = new Lexer();
-
-    const ast = parser.parse(lexer.scan("!a || b < c ? max(1, 2) ^ 2 : foo(d) && -e"));
-
-    // Reads as: ( (!a) || (b < c) ) ? ( max(1, 2) ^ 2 ) : ( foo(d) && (-e) )
-    expect(ast).toEqual({
-      type: "Ternary",
-      cond: {
-        type: "Binary",
-        op: "OR",
-        left: { type: "Unary", op: "NOT", operand: { type: "Ident", name: "a" } },
-        right: {
-          type: "Binary",
-          op: "LT",
-          left: { type: "Ident", name: "b" },
-          right: { type: "Ident", name: "c" },
-        },
-      },
-      then: {
-        type: "Binary",
-        op: "CARROT",
-        left: {
-          type: "Call",
-          callee: { type: "Ident", name: "max" },
-          args: [
-            { type: "Num", value: 1 },
-            { type: "Num", value: 2 },
-          ],
-        },
-        right: { type: "Num", value: 2 },
-      },
-      else: {
-        type: "Binary",
-        op: "AND",
-        left: {
-          type: "Call",
-          callee: { type: "Ident", name: "foo" },
-          args: [{ type: "Ident", name: "d" }],
-        },
-        right: { type: "Unary", op: "MINUS", operand: { type: "Ident", name: "e" } },
-      },
-    });
-  });
-  */
 });

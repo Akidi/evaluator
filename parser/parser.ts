@@ -1,10 +1,11 @@
-import { Ident, Kind, Num, Punct, RelOp, Token } from "../lexer/token";
-import { ParserError, ParserMissingTokensError, ParserUnexpectedTokenError } from "./errors";
-import { BinaryNode, CallNode, IdentNode, IParser, Node, NumNode, TernaryNode, UnaryNode } from "./types";
+import { Kind, Token } from "../lexer/token";
+import { ParserUnexpectedTokenError } from "./errors";
+import { IdentItem, BinaryNode, CallNode, IdentNode, IParser, Node, NumNode, TernaryNode, UnaryNode } from "./types";
 
 export class Parser implements IParser {
   pos: number = 0;
   tokens: Token[] = [];
+  identList: IdentItem[] = [];
   // binary operators only — consulted by the infix loop in parseExpr
   INFIX_BP: Map<Kind, {bp: number, rightAssoc?: boolean}> = new Map([
     ["QUESTION", {bp: 5}],
@@ -16,6 +17,7 @@ export class Parser implements IParser {
     ["GT", {bp: 40}],
     ["GTE", {bp: 40}],
     ["NEQ", {bp: 40}],
+    ["PERCENT", {bp: 40}],
     ["PLUS", {bp: 50}],
     ["MINUS", {bp: 50}],
     ["STAR", {bp: 60}],
@@ -25,10 +27,10 @@ export class Parser implements IParser {
   ])
 
   // unary operators only — how far each reaches into its operand, consulted by parseUnary
-  PREFIX_BP: Map<Kind, number> = new Map([
-    ["NOT", 3],
-    ["MINUS", 6.5],
-  ])
+  PREFIX_BP: Record<'MINUS' | 'NOT', number> = {
+    'NOT': 30,
+    'MINUS': 65,
+  }
 
   constructor() {}
   
@@ -36,7 +38,7 @@ export class Parser implements IParser {
   private advance(): Token { return this.tokens[this.pos++]; }
   private check(kind: Kind): boolean { return this.peek() && this.peek().kind === kind; }
   private expect(kind: Kind, token: Token): Token { 
-    if (!this.check(kind)) throw new ParserUnexpectedTokenError(token);
+    if (!this.check(kind)) throw new ParserUnexpectedTokenError(token, kind);
     return this.advance();
   }
 
@@ -56,28 +58,30 @@ export class Parser implements IParser {
     return {type: "Binary", op, left, right}
   }
 
-  private CallNode(callee: Node, args: Node[]): CallNode {
+  private CallNode(callee: IdentNode, args: Node[]): CallNode {
     return {type: "Call", callee, args};
   }
 
-  private TernaryNode(cond: Node, test: Node, ifTrue: Node, ifFalse: Node): TernaryNode {
+  private TernaryNode(test: Node, ifTrue: Node, ifFalse: Node): TernaryNode {
     return { type: "Ternary", test, ifTrue, ifFalse};
   }
   
-  public parse(tokens: Token[]): Node {
+  public parse(tokens: Token[]): [Node, IdentItem[]] {
     this.tokens = tokens;
+    this.identList = [];
     this.pos = 0;
-    return this.parseExpr();
+    const parseRes = this.parseExpr(0);
+    this.expect('EOF', this.peek());
+    return [parseRes, this.identList];
   };
 
-  private parseExpr(minBp: number = 0): Node {
+  private parseExpr(minBp: number): Node {
     let left: Node = this.parsePrefix();
-    
     while (true) {
       let op = this.peek();
       const bp = this.INFIX_BP.get(op.kind);
       if (bp === undefined || bp.bp < minBp) break;
-      if (op.kind === "LPAREN") {
+      if (op.kind === "LPAREN" && left.type === "Ident") {
         this.advance();
         const args: Node[] = [];
 
@@ -92,24 +96,38 @@ export class Parser implements IParser {
 
 
         this.expect('RPAREN', this.peek());
+        this.identList.push({
+          name: left.name,
+          type: 'FN'
+        });
         left = this.CallNode(left, args);
         continue;
       }
 
       if (op.kind === "QUESTION") {
-        this.advance();
-        const test = this.peek().kind;
-        this.advance();
-        
-        if (this.peek().kind === "COLON") {
-          this.advance
-        }
-        
+        const test = left;
+        op = this.advance();
+        const ifTrue = this.parseExpr(0);
+        this.expect('COLON', op);
+        const ifFalse = this.parseExpr(0);
+        left = this.TernaryNode(test, ifTrue, ifFalse);
         continue;
       }
       this.advance();
       const right = this.parseExpr(bp.rightAssoc ? bp.bp : bp.bp + 1);
+      if (left.type === "Ident") {
+        this.identList.push({
+          name: left.name,
+          type: 'VAR',
+        })
+      }
       left = this.BinaryNode(op.kind, left, right);
+    }
+    if (left.type === "Ident") {
+      this.identList.push({
+        name: left.name,
+        type: 'VAR'
+      })
     }
     return left;
   }
@@ -128,14 +146,15 @@ export class Parser implements IParser {
       case "LPAREN": 
       case "LBRACKET": {
         const inner = this.parseExpr(0);
-        this.expect("RPAREN", this.peek());
+        const bracket = token.kind === "LBRACKET";
+        this.expect(bracket ? "RBRACKET" : "RPAREN", this.peek());
         return inner;
       }
   
       // --- Unary Operators ---
       case "MINUS":
       case "NOT": {
-        const operand = this.parseExpr(this.PREFIX_BP.get(token.kind));
+        const operand = this.parseExpr(this.PREFIX_BP[token.kind]);
         return this.UnaryNode(token.kind, operand);
       }
   

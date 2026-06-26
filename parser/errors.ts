@@ -1,4 +1,4 @@
-import { Token } from "../lexer/token";
+import { Kind, Token } from "../lexer/token";
 import { ProjectError } from "../shared/errors";
 
 export class ParserError extends ProjectError {}
@@ -10,8 +10,8 @@ export class ParserMissingTokensError extends ParserError {
 }
 
 export class ParserUnexpectedTokenError extends ParserError {
-  constructor(token: Token) {
-    super(`Unexpected next token of kind ${token.kind} found @ ${token.position.start} - ${token.position.end} Line: ${token.position.line}`)
+  constructor(token: Token, expected?: Kind | 'Unknown') {
+    super(`Unexpected next token of kind ${token.kind} ( expected: ${expected} ) found @ ${token.position.start} - ${token.position.end} Line: ${token.position.line}`)
   }
 }
 
