@@ -3,6 +3,7 @@ import { Parser } from "./parser";
 import { IParser } from "./types";
 import { Token } from "../lexer/token";
 import { ILexer, Lexer } from "../lexer/lexer";
+import { ParserUnexpectedTokenError } from "./errors";
 
 const lexer: ILexer = new Lexer();
 const parser: IParser = new Parser();
@@ -10,7 +11,7 @@ const parser: IParser = new Parser();
 describe("Parser", () => {
   it("should error on connecting idents without punctuation between.", () => {
     const tokens = lexer.scan("CON A B");
-    expect(() => parser.parse(tokens)).toThrow();
+    expect(() => parser.parse(tokens)).toThrow(ParserUnexpectedTokenError);
   })
   it("should return a NumNode", () => {
     const tokens: Token[] = lexer.scan("1");
@@ -366,7 +367,7 @@ describe("Parser (Pratt Parsing Tests)", () => {
   it("should throw on leftover tokens after a valid expression (1 + 2 3)", () => {
     const tokens: Token[] = lexer.scan("1 + 2 3");
 
-    expect(() => parser.parse(tokens)).toThrow();
+    expect(() => parser.parse(tokens)).toThrow(ParserUnexpectedTokenError);
   });
 
   it("should treat exponent as right-associative (2 ^ 3 ^ 2)", () => {
