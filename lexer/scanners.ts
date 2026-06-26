@@ -1,5 +1,5 @@
 import { ICursor } from "./cursor";
-import { LexerDecimalError, LexerDuplicateDecimalError } from "./errors";
+import { DuplicateDecimalError, MalformedDecimalNumberError } from "./errors";
 import { Token } from "./token";
 
 export function scanIdent(cursor: ICursor, c: string): Token {
@@ -30,8 +30,9 @@ export function scanNumber(cursor: ICursor, c: string): Token {
     const peek = cursor.peek();
     
     if (!isDigitCheck && !isPeriod) break;
-    if (isPeriod && isFloat) throw new LexerDuplicateDecimalError(cursor.column())
-    if (isPeriod && (!peek || !isDigit(peek))) throw new LexerDecimalError(cursor.column());
+    if (isPeriod && !isDigit(c)) throw new MalformedDecimalNumberError(cursor.column())
+    if (isPeriod && isFloat) throw new DuplicateDecimalError(cursor.column())
+    if (isPeriod && (!peek || !isDigit(peek))) throw new MalformedDecimalNumberError(cursor.column());
     if (isPeriod && !isFloat) isFloat = true;
     
     value += next;

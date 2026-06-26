@@ -1,5 +1,5 @@
 import { Kind, Token } from "../lexer/token";
-import { ParserUnexpectedTokenError } from "./errors";
+import { UnexpectedTokenKind } from "./errors";
 import { IdentItem, BinaryNode, CallNode, IdentNode, IParser, Node, NumNode, TernaryNode, UnaryNode } from "./types";
 
 export class Parser implements IParser {
@@ -38,7 +38,7 @@ export class Parser implements IParser {
   private advance(): Token { return this.tokens[this.pos++]; }
   private check(kind: Kind): boolean { return this.peek() && this.peek().kind === kind; }
   private expect(kind: Kind, token: Token): Token { 
-    if (!this.check(kind)) throw new ParserUnexpectedTokenError(token, kind);
+    if (!this.check(kind)) throw new UnexpectedTokenKind(token, kind);
     return this.advance();
   }
 
@@ -159,7 +159,7 @@ export class Parser implements IParser {
       }
   
       default:
-        throw new ParserUnexpectedTokenError(token);
+        throw new UnexpectedTokenKind(token);
     }
   }
 } 

@@ -2,19 +2,19 @@ import { ProjectError } from "../shared/errors";
 
 export class LexerError extends ProjectError {}
 
-export class LexerUnknownCharError extends LexerError {
+export class UnknownCharacterError extends LexerError {
   constructor(char: string, column: number) {
     super(`Unexpected character '${char}' at column ${column}.`);
   }
 }
 
-export class LexerDecimalError extends LexerError {
+export class MalformedDecimalNumberError extends LexerError {
   constructor(column: number) {
-    super(`Missing number either before or after a decimal @ column ${column} Must be in form of x.y`);
+    super(`Malformed decimal number at column ${column}, only accepted format is x.y`)
   }
 }
 
-export class LexerDuplicateDecimalError extends LexerError {
+export class DuplicateDecimalError extends LexerError {
   constructor(column: number) {
     super(`Duplicate decimal located @ column ${column} Numbers can contain only 1 decimal.`);
   }

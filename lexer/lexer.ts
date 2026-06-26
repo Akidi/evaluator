@@ -1,5 +1,5 @@
 import { Cursor, type ICursor } from "./cursor";
-import { LexerUnknownCharError } from "./errors";
+import { UnknownCharacterError } from "./errors";
 import { isDigit, isLetter, isWhitespace, scanIdent, scanNumber } from "./scanners";
 import { MAX_RELOP_LEN, Punct, PUNCT_TO_CHAR, RELOP_BY_LEN, RelOp, Token, Ident, Kind, Num } from "./token";
 
@@ -68,7 +68,7 @@ export class Lexer implements ILexer {
         continue;
       }
 
-      throw new LexerUnknownCharError(c, start);
+      throw new UnknownCharacterError(c, start);
     }
     this.tokens.push(makeToken("EOF", this.cursor.column(), this.cursor.column(), this.cursor.line()));
     return this.tokens;

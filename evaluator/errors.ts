@@ -17,3 +17,9 @@ export class UndefinedFunctionError extends EvaluatorError {
     super(`Function ${fn} is undefined.`)
   }
 }
+
+export class InvalidOperandError extends EvaluatorError {
+  constructor(op: string, expected: string) {
+    super(`Operand for ${op} must be ${expected}.`);
+  }
+}

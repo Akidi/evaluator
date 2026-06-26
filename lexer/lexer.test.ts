@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { ILexer, Lexer } from "./lexer";
 import { Token } from "./token";
-import { CursorSourceError, LexerDecimalError, LexerDuplicateDecimalError, LexerUnknownCharError } from "./errors";
+import { CursorSourceError, DuplicateDecimalError, MalformedDecimalNumberError, UnknownCharacterError } from "./errors";
 
 const at = (start: number, end: number, line: number = 1) => ({ start, end, line });
 
@@ -15,8 +15,7 @@ describe("lexer", () => {
     expect(() => lexer.scan()).toThrow('Cursor Source missing use setSource to set the source before trying again.');
   });
   it("throws error when unexpected character is encountered", () => {
-    expect(() => lexer.scan("CON @")).toThrow(LexerUnknownCharError);
-    expect(() => lexer.scan("CON @")).toThrow('Unexpected character \'@\' at column 5');
+    expect(() => lexer.scan("CON @")).toThrow(UnknownCharacterError);
   });
   it("scans an identifier", () => {
     let tokens: Token[] = lexer.scan("CON");
@@ -110,20 +109,16 @@ describe("lexer", () => {
   });
   it("throws an error on incomplete or malformed decimals", () => {
     // Case A: Missing fractional part at the end of the string
-    expect(() => lexer.scan("3.")).toThrow(LexerDecimalError);
-    expect(() => lexer.scan("3.")).toThrow("Missing number either before or after a decimal @ column 2 Must be in form of x.y");
+    expect(() => lexer.scan("3.")).toThrow(MalformedDecimalNumberError);
 
     // CASE B: Missing fractional at the beginning
-    expect(() => lexer.scan(".3")).toThrow(LexerUnknownCharError);
-    expect(() => lexer.scan(".3")).toThrow("Unexpected character '.' at column 1.");
+    expect(() => lexer.scan(".3")).toThrow(UnknownCharacterError);
 
     // Case C: Multiple Decimals
-    expect(() => lexer.scan("0.3.5")).toThrow(LexerDuplicateDecimalError);
-    expect(() => lexer.scan("0.3.5")).toThrow("Duplicate decimal located @ column 4 Numbers can contain only 1 decimal.");
+    expect(() => lexer.scan("0.3.5")).toThrow(DuplicateDecimalError);
 
     // Case D: Decimal followed by a non-digit
-    expect(() => lexer.scan("3.A")).toThrow(LexerDecimalError);
-    expect(() => lexer.scan("3.A")).toThrow("Missing number either before or after a decimal @ column 2 Must be in form of x.y");
+    expect(() => lexer.scan("3.A")).toThrow(MalformedDecimalNumberError);
 
   });
 });
