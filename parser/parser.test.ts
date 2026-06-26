@@ -306,9 +306,68 @@ describe("Parser (Pratt Parsing Tests)", () => {
     });
   });
 
-  it("should handle modulo ( % ) correctly.", () => {
+  it("should treat modulo as left-associative, same precedence as * and / (10 % 3 % 2)", () => {
+    const tokens: Token[] = lexer.scan("10 % 3 % 2");
 
-  })
+    const [ast] = parser.parse(tokens);
+
+    // Left-associative, same bp as * and /: groups as (10 % 3) % 2
+    expect(ast).toEqual({
+      type: "Binary",
+      op: "PERCENT",
+      left: {
+        type: "Binary",
+        op: "PERCENT",
+        left: { type: "Num", value: 10 },
+        right: { type: "Num", value: 3 },
+      },
+      right: { type: "Num", value: 2 },
+    });
+  });
+
+  it("should bind modulo at the same precedence as multiplication (2 * 5 % 3)", () => {
+    const tokens: Token[] = lexer.scan("2 * 5 % 3");
+
+    const [ast] = parser.parse(tokens);
+
+    // Same bp, left-to-right: groups as (2 * 5) % 3
+    expect(ast).toEqual({
+      type: "Binary",
+      op: "PERCENT",
+      left: {
+        type: "Binary",
+        op: "STAR",
+        left: { type: "Num", value: 2 },
+        right: { type: "Num", value: 5 },
+      },
+      right: { type: "Num", value: 3 },
+    });
+  });
+
+  it("should bind modulo tighter than addition (1 + 4 % 3)", () => {
+    const tokens: Token[] = lexer.scan("1 + 4 % 3");
+
+    const [ast] = parser.parse(tokens);
+
+    // % (bp 60) binds tighter than + (bp 50): groups as 1 + (4 % 3)
+    expect(ast).toEqual({
+      type: "Binary",
+      op: "PLUS",
+      left: { type: "Num", value: 1 },
+      right: {
+        type: "Binary",
+        op: "PERCENT",
+        left: { type: "Num", value: 4 },
+        right: { type: "Num", value: 3 },
+      },
+    });
+  });
+
+  it("should throw on leftover tokens after a valid expression (1 + 2 3)", () => {
+    const tokens: Token[] = lexer.scan("1 + 2 3");
+
+    expect(() => parser.parse(tokens)).toThrow();
+  });
 
   it("should treat exponent as right-associative (2 ^ 3 ^ 2)", () => {
     const parser = new Parser();
