@@ -23,3 +23,15 @@ export class InvalidOperandError extends EvaluatorError {
     super(`Operand for ${op} must be ${expected}.`);
   }
 }
+
+export class ArityMismatchError extends EvaluatorError {
+  constructor(fn: string, expected: number, received: number) {
+    super(`Function ${fn} expects ${expected} argument(s) but received ${received}.`);
+  }
+}
+
+export class FunctionRedefinitionError extends EvaluatorError {
+  constructor(fn: string) {
+    super(`Function ${fn} is already defined and cannot be redefined.`);
+  }
+}
