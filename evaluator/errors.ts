@@ -1,3 +1,4 @@
+import { Node } from "../parser/types";
 import { ProjectError } from "../shared/errors";
 
 export class EvaluatorError extends ProjectError {
@@ -33,5 +34,11 @@ export class ArityMismatchError extends EvaluatorError {
 export class FunctionRedefinitionError extends EvaluatorError {
   constructor(fn: string) {
     super(`Function ${fn} is already defined and cannot be redefined.`);
+  }
+}
+
+export class DivisionByZeroError extends EvaluatorError {
+  constructor(node: Node) {
+    super(`Division by zero is illegal stop it; found at this node ${String(node)}`);
   }
 }

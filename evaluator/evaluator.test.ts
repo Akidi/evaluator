@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Evaluator } from "./evaluator";
 import { IEvaluator } from "./types";
-import { ArityMismatchError, EvaluatorError, FunctionRedefinitionError, InvalidOperandError, UndefinedFunctionError, UndefinedVariableError } from "./errors";
+import { ArityMismatchError, DivisionByZeroError, EvaluatorError, FunctionRedefinitionError, InvalidOperandError, UndefinedFunctionError, UndefinedVariableError } from "./errors";
 import { ILexer, Lexer } from "../lexer/lexer";
 import { IParser } from "../parser/types";
 import { Parser } from "../parser/parser";
@@ -618,5 +618,62 @@ describe("Evaluator", () => {
     // -> ifFalse branch: (a != b) && (b > c) -> (3 != 5) && (5 > 2) -> true && true -> true
     const [ast] = parser.parse(lexer.scan(formula));
     expect(evaluator.evaluate(ast)).toBe(true);
+  });
+
+  // --- Division / modulo by zero ---
+  // Decision (2026-06-28): a zero denominator must THROW, not leak Infinity/NaN
+  // out of the pipeline. Implement as a dedicated DivisionByZeroError extends
+  // EvaluatorError; these assert the base class + message so the file stays
+  // importable before that subclass exists. Tighten to toThrow(DivisionByZeroError)
+  // once it's added.
+  it("throws on a literal division by zero instead of returning Infinity", () => {
+    const evaluator: IEvaluator = new Evaluator();
+    let caught: unknown;
+
+    try {
+      evaluator.evaluate({
+        type: "Binary",
+        op: "SLASH",
+        left: { type: "Num", value: 6 },
+        right: { type: "Num", value: 0 },
+      });
+    } catch (e) {
+      caught = e;
+    }
+
+    expect(caught).toBeInstanceOf(EvaluatorError);
+    expect((caught as Error).message).toMatch(/divi.*zero/i);
+  });
+
+  it("throws on a literal modulo by zero instead of returning NaN", () => {
+    const evaluator: IEvaluator = new Evaluator();
+    let caught: unknown;
+
+    try {
+      evaluator.evaluate({
+        type: "Binary",
+        op: "PERCENT",
+        left: { type: "Num", value: 7 },
+        right: { type: "Num", value: 0 },
+      });
+    } catch (e) {
+      caught = e;
+    }
+
+    expect(caught).toBeInstanceOf(DivisionByZeroError);
+  });
+
+  it("throws when a variable drives the denominator to zero (the realistic RPG case)", () => {
+    const evaluator: IEvaluator = new Evaluator();
+    evaluator.setVar("STR", 6);
+    evaluator.setVar("DEX", 0);
+
+    // STR / DEX  with DEX == 0
+    expect(() => evaluator.evaluate({
+      type: "Binary",
+      op: "SLASH",
+      left: { type: "Ident", name: "STR" },
+      right: { type: "Ident", name: "DEX" },
+    })).toThrow(DivisionByZeroError);
   });
 });

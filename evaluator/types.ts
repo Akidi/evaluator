@@ -7,7 +7,7 @@ export interface IEvaluator {
   defineFn(name: string, fn: EvalFn, arity: number, variadic?: boolean): void;
 }
 
-export type EvalFn = (...args: unknown[]) => number | boolean;
+export type EvalFn = (...args: number[]) => number | boolean;
 export type VarEnv = Map<string, number>;
 export type FnEntry = { fn: EvalFn; arity: number; variadic?: boolean };
 export type FnEnv = Map<string, FnEntry>;
