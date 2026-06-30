@@ -1,138 +1,106 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { Stepper } from "./stepper";
 import { Evaluator } from "../evaluator/evaluator";
 import { UndefinedVariableError } from "../evaluator/errors";
 
-// ============================================================================
-// GUIDING SCAFFOLD — proposed design, written 2026-06-28. Adjust freely; these
-// tests ARE the spec, so changing a decision means changing the test.
-//
-// Confirmed design decisions (from review Q&A):
-//   - Base value of each tracked var = its CURRENT value on the Evaluator
-//     (set via evaluator.setVar before stepping). Unset -> UndefinedVariableError.
-//   - Increments may be full FORMULAS, not just numbers.
-//   - run() returns BOTH a final snapshot and the full timeline.
-//
-// Assumptions I made that you should sanity-check (each has a test below):
-//   A1. Spec grammar:
-//         spec      := rule (';' rule)* ';' totalSteps
-//         rule      := name ':' incrementFormula ':' divisor      (compact)
-//                    | '(' name ',' incrementFormula ',' divisor ')'  (explicit)
-//       The explicit form is the escape hatch when the formula contains ':'
-//       (ternary). Splitting MUST be paren/ternary-depth aware — only split on
-//       ';' / ':' / ',' at depth 0 (see A5 / the clamp + ternary tests).
-//   A2. "every N steps" => the rule fires on step i when (i % divisor === 0),
-//       1-indexed. divisor 1 fires every step.
-//   A3. The timeline includes a step-0 snapshot (base values, before any
-//       increment), then one snapshot per step 1..total. length === total + 1.
-//   A4. Increment formulas are evaluated against the CURRENT evolving snapshot
-//       (so a rule can read another tracked var at its current stepped value),
-//       and rules within one step apply in SPEC ORDER (left to right).
-//   A5. run() MUTATES the passed Evaluator's vars as it steps (it reuses the
-//       evaluator to evaluate increment formulas). If you'd rather it not
-//       clobber caller state, that's a design change — flag it.
-//   A6. Snapshots/`final` carry only the TRACKED vars (the rule names), keyed
-//       by name. Non-tracked setVars (constants like a STR used inside a
-//       formula) are NOT included in the snapshot.
-//
-// Proposed types (to live in stepper/types.ts):
-  // type Snapshot   = { step: number; vars: Record<string, number> };
-  // type StepResult = { final: Record<string, number>; timeline: Snapshot[] };
-  // interface IStepper { run(spec: string): StepResult; }
-// Constructor: new Stepper(evaluator)  — stepper builds its own Lexer/Parser.
-// ============================================================================
+const evaluator = new Evaluator();
 
 describe("Stepper", () => {
-  it("applies a single compact rule every step (Level:1:1)", () => {
-    const evaluator = new Evaluator();
+  beforeEach(() => {
+    evaluator.reset();
+  });
+
+  // ── RUNG 1: loop + wiring + minimal parse ────────────────────────────
+  // The whole stepper in one breath: a loop that adds numbers to a var.
+  // Note the evaluator is now INJECTED — that's the wiring gap, closed.
+  it("applies a single compact rule every step  Level|1|1", () => {
     evaluator.setVar("Level", 1);
     const stepper = new Stepper(evaluator);
-
-    const result = stepper.run("Level:1:1; 3");
+    const result = stepper.run("Level|1|1; 3");
 
     expect(result.final).toEqual({ Level: 4 });
   });
 
-  it("returns a timeline with a step-0 base snapshot plus one per step", () => {
-    const evaluator = new Evaluator();
+  // ── RUNG 2: the increment is a FORMULA, evaluated against live state ──
+  // Forces you to run the formula through lexer→parser→evaluator, not
+  // parseInt. "Level" as a formula reads Level's CURRENT value each step.
+  // start 2 → +2 → 4 → +4 → 8
+  it("evaluates the increment formula against current state", () => {
+    evaluator.setVar("Level", 2);
+    const stepper = new Stepper(evaluator);
+    const result = stepper.run("Level|Level|1; 2");
+
+    expect(result.final).toEqual({ Level: 8 });
+  });
+
+  // ── RUNG 3: the divisor is fire-frequency ────────────────────────────
+  // Apply a rule only when (step % divisor === 0). divisor 2 → steps 2,4.
+  it("fires a rule only when step % divisor === 0", () => {
+    evaluator.setVar("CON", 0);
+    const stepper = new Stepper(evaluator);
+    const result = stepper.run("CON|3|2; 4");
+
+    expect(result.final).toEqual({ CON: 6 });
+  });
+
+  // ── RUNG 4: the timeline, with a step-0 baseline ─────────────────────
+  // Snapshot length is totalSteps + 1 (step 0 = values before any change).
+  it("captures a timeline with a step-0 baseline snapshot", () => {
     evaluator.setVar("Level", 1);
     const stepper = new Stepper(evaluator);
-
-    const result = stepper.run("Level:1:1; 3");
+    const result = stepper.run("Level|1|1; 2");
 
     expect(result.timeline).toEqual([
       { step: 0, vars: { Level: 1 } },
       { step: 1, vars: { Level: 2 } },
       { step: 2, vars: { Level: 3 } },
-      { step: 3, vars: { Level: 4 } },
     ]);
   });
 
-  it("only fires a rule on steps divisible by its divisor (CON:3:2)", () => {
-    const evaluator = new Evaluator();
-    evaluator.setVar("CON", 10);
+  // ── RUNG 5: multiple rules, applied left-to-right in one step ────────
+  // Level updates FIRST, so CON's formula sees the already-bumped Level.
+  it("applies rules left-to-right so later rules see earlier updates", () => {
+    evaluator.setVar("Level", 0);
+    evaluator.setVar("CON", 0);
     const stepper = new Stepper(evaluator);
+    const result = stepper.run("Level|1|1; CON|Level|1; 1");
 
-    const result = stepper.run("CON:3:2; 4");
-
-    // fires on steps 2 and 4 only -> 10 -> 13 -> 16
-    expect(result.timeline.map((s) => s.vars.CON)).toEqual([10, 10, 13, 13, 16]);
-    expect(result.final).toEqual({ CON: 16 });
+    expect(result.final).toEqual({ Level: 1, CON: 1 });
   });
 
-  it("tracks multiple rules against one shared total-step count", () => {
-    const evaluator = new Evaluator();
+  // ── RUNG 6: errors propagate from the evaluator ──────────────────────
+  // A formula naming an unset variable should throw — you get this free
+  // by reusing the evaluator's own validation. (No new error class yet.)
+  it("throws UndefinedVariableError when a formula names an unset variable", () => {
     evaluator.setVar("Level", 1);
-    evaluator.setVar("CON", 10);
     const stepper = new Stepper(evaluator);
 
-    const result = stepper.run("Level:1:1; CON:3:2; 4");
-
-    expect(result.final).toEqual({ Level: 5, CON: 16 });
+    expect(() => stepper.run("Level|Mystery|1; 1")).toThrow(UndefinedVariableError);
   });
 
-  it("evaluates a formula increment against the evolving snapshot, in spec order", () => {
-    const evaluator = new Evaluator();
-    evaluator.setVar("CON", 10);
-    evaluator.setVar("HP", 0);
+  // ── RUNG 7: a run leaves the evaluator at its pre-run values ──────────
+  // The stepper writes the step-0 baseline back when it finishes, so the
+  // evaluator is pristine afterward — no lasting side effect. (ADR 0001.)
+  it("restores the evaluator to its pre-run values after a run", () => {
+    evaluator.setVar("Level", 1);
     const stepper = new Stepper(evaluator);
 
-    // CON updates first each step, then HP += CON (its already-updated value)
-    const result = stepper.run("CON:2:1; HP:CON:1; 2");
+    const result = stepper.run("Level|1|1; 3");
 
-    // step1: CON 12, HP += 12 -> 12 ; step2: CON 14, HP += 14 -> 26
-    expect(result.final).toEqual({ CON: 14, HP: 26 });
+    expect(result.final).toEqual({ Level: 4 }); // the run still progressed
+    expect(evaluator.getVar("Level")).toBe(1); // ...but the evaluator is reset
   });
 
-  it("supports the explicit ( name , formula , divisor ) form for ternary increments", () => {
-    const evaluator = new Evaluator();
-    evaluator.setVar("L", 4);
+  // Because the baseline is restored, the same stepper can be re-run with a
+  // different formula and still start from the original value.
+  it("can be re-run from the same baseline with a different formula", () => {
+    evaluator.setVar("Level", 1);
     const stepper = new Stepper(evaluator);
 
-    // ternary ':' would collide with the field separator in compact form,
-    // so the explicit comma-separated form is required here.
-    const result = stepper.run("(L, L < 5 ? 2 : 1, 1); 3");
+    const first = stepper.run("Level|1|1; 3"); // +1 x3
+    const second = stepper.run("Level|2|1; 3"); // +2 x3, from Level=1 again
 
-    // step1: 4<5 -> +2 -> 6 ; step2: 6<5 false -> +1 -> 7 ; step3: -> +1 -> 8
-    expect(result.final).toEqual({ L: 8 });
-  });
-
-  it("splits the explicit form depth-aware so commas inside a call don't break it", () => {
-    const evaluator = new Evaluator();
-    evaluator.setVar("CON", 10);
-    evaluator.setVar("HP", 0);
-    const stepper = new Stepper(evaluator);
-
-    // clamp(CON, 0, 99) contains commas that must NOT be treated as field separators
-    const result = stepper.run("(HP, clamp(CON, 0, 99), 1); 2");
-
-    expect(result.final).toEqual({ HP: 20 });
-  });
-
-  it("throws UndefinedVariableError when a tracked var has no base value set", () => {
-    const evaluator = new Evaluator();
-    const stepper = new Stepper(evaluator);
-
-    expect(() => stepper.run("Ghost:1:1; 2")).toThrow(UndefinedVariableError);
+    expect(first.final).toEqual({ Level: 4 });
+    expect(second.final).toEqual({ Level: 7 });
   });
 });
