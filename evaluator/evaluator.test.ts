@@ -676,4 +676,28 @@ describe("Evaluator", () => {
       right: { type: "Ident", name: "DEX" },
     })).toThrow(DivisionByZeroError);
   });
+
+  // --- getVar: direct read, bypassing the lex→parse→evaluate pipeline ---
+  // Added so the Stepper can seed its working map (and step-0 baseline) without
+  // building an Ident AST just to read a number. See ADR 0001.
+  it("getVar returns the value previously set", () => {
+    const evaluator = new Evaluator();
+    evaluator.setVar("Level", 7);
+
+    expect(evaluator.getVar("Level")).toBe(7);
+  });
+
+  it("getVar returns undefined for a name that was never set", () => {
+    const evaluator = new Evaluator();
+
+    expect(evaluator.getVar("Nope")).toBeUndefined();
+  });
+
+  it("getVar reflects the latest value after an overwrite", () => {
+    const evaluator = new Evaluator();
+    evaluator.setVar("Level", 1);
+    evaluator.setVar("Level", 9);
+
+    expect(evaluator.getVar("Level")).toBe(9);
+  });
 });

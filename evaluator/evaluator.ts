@@ -63,11 +63,20 @@ export class Evaluator implements IEvaluator {
     if (typeof value !== "number") {
       throw new InvalidOperandError(fnName, "number");
     }
-    return value; // narrowed to `number` here
+    return value;
+  }
+
+  reset(): void {
+    this.vars = new Map();
+    this.fns = new Map(BUILT_IN_FNS);
   }
 
   setVar(name: string, value: number): void {
     this.vars.set(name, value);
+  }
+
+  getVar(name: string): number | undefined {
+    return this.vars.get(name);
   }
 
   defineFn(name: string, fn: EvalFn, arity: number, variadic?: boolean): void {
