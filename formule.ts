@@ -1,21 +1,24 @@
 import { Evaluator } from "./evaluator/evaluator";
 import { IEvaluator } from "./evaluator/types";
-import { Lexer, ILexer } from "./lexer/lexer";
+import { Lexer } from "./lexer/lexer";
+import { ILexer } from "./lexer/types";
 import { Parser } from "./parser/parser";
 import { IParser } from "./parser/types";
 
 const lexer = new Lexer();
 const parser = new Parser();
-const evaluator = new Evaluator();
 
-export class Formulate {
+export interface IFormulate {
+  run: (formulae: string) => boolean | number;
+}
+
+export class Formulate implements IFormulate {
   lexer: ILexer = lexer;
   parser: IParser = parser;
-  evaluator: IEvaluator = evaluator;
-  constructor() {}
+  constructor(private evaluator: IEvaluator = new Evaluator()) {}
   run(formulae: string): boolean | number {
     const tokens = lexer.scan(formulae);
     const [ast, identList] = parser.parse(tokens);
-    return evaluator.evaluate(ast, identList);
+    return this.evaluator.evaluate(ast, identList);
   }
 }
