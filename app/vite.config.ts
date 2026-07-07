@@ -2,7 +2,6 @@
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
 
 import { mdsvex } from 'mdsvex';
-import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
 import adapter from '@sveltejs/adapter-node';
@@ -32,7 +31,6 @@ export default defineConfig({
     }
   },
   plugins: [
-    tailwindcss(),
     sveltekit({
       compilerOptions: {
         // Force runes mode for the project, except for libraries. Can be removed in svelte 6.
