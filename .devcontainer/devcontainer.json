@@ -1,0 +1,15 @@
+{
+	"name": "formula",
+	"build": {
+		"dockerfile": "Dockerfile"
+	},
+	"workspaceFolder": "/workspace",
+	"workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
+	"mounts": [
+		"source=formula-node-modules,target=/workspace/node_modules,type=volume",
+		"source=formula-app-node-modules,target=/workspace/app/node_modules,type=volume"
+	],
+	"forwardPorts": [5173],
+	"postCreateCommand": "pnpm install",
+	"remoteUser": "node"
+}

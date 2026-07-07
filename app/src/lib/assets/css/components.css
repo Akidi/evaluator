@@ -1,0 +1,12 @@
+/*
+  Component styles are co-located in each component's own <style> block
+  (atoms/molecules), keyed off [data-component] / [data-variant] hooks and
+  driven by the design tokens in this folder (colors, spacing, typography).
+
+  This keeps every component self-contained and copy-paste portable: dropping a
+  component into a new project only requires that project to define the same
+  token custom properties on :root.
+
+  Intentionally empty — add only styles that are genuinely global and not owned
+  by a single component.
+*/
