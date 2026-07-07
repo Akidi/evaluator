@@ -13,7 +13,7 @@
 		type EvalResult,
 		type StepperResult
 	} from '$lib/formula';
-	import { Heading, Button, Tag, Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from '$lib/components/atoms';
+	import { Heading, Button, Tag, Table, TableHead, TableBody, TableRow, TableHeader, TableCell, Select } from '$lib/components/atoms';
 	import { PageShell, Stack, Grid, Cluster } from '$lib/components/layouts';
 	import { Card, FormField, Tabs, TabList, Tab, TabPanel, AlertBanner } from '$lib/components/molecules';
 
@@ -326,7 +326,127 @@
 				</Grid>
 			</TabPanel>
 
-			<!-- TASK5_STEPPER_PANEL_PLACEHOLDER -->
+			<TabPanel value="stepper">
+				<Card>
+					{#snippet header()}
+						<Heading level={2} size="sm">Stepper</Heading>
+						<p style="font-size: var(--text-xs); color: var(--text-muted);">
+							Each rule advances a variable (starting from its value in Variables) by
+							<code>inc</code> every <code>div</code> steps.
+						</p>
+					{/snippet}
+
+					<Stack space="var(--space-4)">
+						<Stack space="var(--space-2)">
+							{#each rules as r, i (i)}
+								<Cluster space="var(--space-2)" align="flex-end" style="flex-wrap: nowrap;">
+									<Cluster space="0" style="flex-direction: column; flex-shrink: 0;">
+										<Button
+											variant="ghost"
+											disabled={i === 0}
+											onclick={() => moveRuleUp(i)}
+											aria-label="Move rule up"
+										>
+											↑
+										</Button>
+										<Button
+											variant="ghost"
+											disabled={i === rules.length - 1}
+											onclick={() => moveRuleDown(i)}
+											aria-label="Move rule down"
+										>
+											↓
+										</Button>
+									</Cluster>
+
+									{#if addingVarForRule.has(i)}
+										<div style="width: 7rem; flex-shrink: 0;">
+											<FormField
+												label="Variable"
+												placeholder="new name"
+												autofocus
+												onkeydown={(e) => {
+													if (e.key === 'Enter') commitNewRuleVariable(i, e.currentTarget.value);
+													if (e.key === 'Escape') cancelNewRuleVariable(i);
+												}}
+												onblur={(e) => commitNewRuleVariable(i, e.currentTarget.value)}
+											/>
+										</div>
+									{:else}
+										<div style="width: 7rem; flex-shrink: 0;">
+											<label style="font-size: var(--text-sm); font-weight: 500; display: flex; flex-direction: column; gap: var(--space-1);">
+												Variable
+												<Select
+													value={r.variable}
+													onchange={(e) => onRuleVariableSelect(i, e.currentTarget.value)}
+												>
+													<option value="" disabled>variable</option>
+													{#each vars as v (v.name)}
+														{#if v.name.trim() !== ''}
+															<option value={v.name.trim()}>{v.name.trim()}</option>
+														{/if}
+													{/each}
+													<option value={NEW_VAR_OPTION}>+ new variable</option>
+												</Select>
+											</label>
+										</div>
+									{/if}
+
+									<div style="flex: 1; min-width: 0;">
+										<FormField label="Inc" placeholder="inc" bind:value={r.inc} />
+									</div>
+									<div style="width: 5rem; flex-shrink: 0;">
+										<FormField label="Div" placeholder="div" bind:value={r.div} />
+									</div>
+									<Button variant="ghost" onclick={() => removeRule(i)} aria-label="Remove rule">
+										−
+									</Button>
+								</Cluster>
+							{/each}
+							<Button variant="secondary" onclick={addRule}>+ rule</Button>
+						</Stack>
+
+						<Cluster space="var(--space-3)" align="flex-end">
+							<div style="width: 8rem;">
+								<FormField label="Steps" as="input" type="number" bind:value={steps} min="0" />
+							</div>
+							<Button variant="primary" onclick={doStep}>Run</Button>
+						</Cluster>
+
+						{#if stepResult}
+							{#if stepResult.ok}
+								<Table>
+									<TableHead>
+										<TableRow>
+											<TableHeader>step</TableHeader>
+											{#each varNames as name (name)}
+												<TableHeader>{name}</TableHeader>
+											{/each}
+										</TableRow>
+									</TableHead>
+									<TableBody>
+										{#each stepResult.result.timeline as snap (snap.step)}
+											<TableRow>
+												<TableCell>{snap.step}</TableCell>
+												{#each varNames as name (name)}
+													<TableCell>{snap.vars[name]}</TableCell>
+												{/each}
+											</TableRow>
+										{/each}
+									</TableBody>
+								</Table>
+								<AlertBanner variant="success" ondismiss={() => (stepResult = null)}>
+									final: {JSON.stringify(stepResult.result.final)}
+								</AlertBanner>
+							{:else}
+								<AlertBanner variant="error" ondismiss={() => (stepResult = null)}>
+									{stepResult.error}
+								</AlertBanner>
+							{/if}
+						{/if}
+					</Stack>
+				</Card>
+			</TabPanel>
 		</Tabs>
 	</Stack>
 </PageShell>
