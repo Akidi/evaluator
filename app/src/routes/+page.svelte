@@ -339,7 +339,7 @@
 					<Stack space="var(--space-4)">
 						<Stack space="var(--space-2)">
 							{#each rules as r, i (i)}
-								<Cluster space="var(--space-2)" align="flex-end" style="flex-wrap: nowrap;">
+								<Cluster space="var(--space-2)" align="flex-end">
 									<Cluster space="0" style="flex-direction: column; flex-shrink: 0;">
 										<Button
 											variant="ghost"
