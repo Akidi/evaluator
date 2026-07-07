@@ -1,4 +1,4 @@
-import { Ident, Kind, Num, Token } from "../token";
+import type { Ident, Kind, Num, Token } from "../token";
 
 export const isDigit = (c: string): boolean => c >= "0" && c <= "9";
 export const isLetter = (c: string): boolean =>

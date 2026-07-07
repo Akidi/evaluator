@@ -1,6 +1,6 @@
-import { ICursor } from "../cursor";
-import { Punct, PUNCT_TO_CHAR, Token } from "../token";
-import { TokenRule } from "./types";
+import type { ICursor } from "../cursor";
+import { type Punct, PUNCT_TO_CHAR, type Token } from "../token";
+import type { TokenRule } from "./types";
 
 
 const PUNCT = Object.fromEntries(

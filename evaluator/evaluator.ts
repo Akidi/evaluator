@@ -1,5 +1,5 @@
-import { IdentItem, Node } from "../parser/types";
-import { CompareFn, EvalFn, FnEnv, IEvaluator, MathFn, VarEnv } from "./types";
+import type { IdentItem, Node } from "../parser/types";
+import type { CompareFn, EvalFn, FnEnv, IEvaluator, MathFn, VarEnv } from "./types";
 import {
   ArityMismatchError,
   DivisionByZeroError,
@@ -9,7 +9,7 @@ import {
   UndefinedFunctionError,
   UndefinedVariableError,
 } from "./errors";
-import { Kind } from "../lexer/token";
+import type { Kind } from "../lexer/token";
 
 const BUILT_IN_FNS: FnEnv = new Map([
   ["sqrt", { fn: (...args) => Math.sqrt(args[0]), arity: 1 }],
@@ -36,6 +36,18 @@ const BUILT_IN_FNS: FnEnv = new Map([
       variadic: true,
     },
   ],
+  [
+    "random",
+    {
+      fn: (...args) => {
+        if (args.length === 0) return Math.random();
+        if (args.length === 1) return Math.random() * args[0];
+        return args[0] + Math.random() * (args[1] - args[0]);
+      },
+      arity: 0,
+      variadic: true,
+    },
+  ],
 ]);
 
 export class Evaluator implements IEvaluator {
@@ -44,6 +56,7 @@ export class Evaluator implements IEvaluator {
   private MATH_OPS: Map<Kind, MathFn> = new Map([
     ["PLUS", (a, b) => a + b],
     ["STAR", (a, b) => a * b],
+    ["MULT", (a, b) => a * b],
     ["MINUS", (a, b) => a - b],
     ["SLASH", (a, b) => a / b],
     ["CARROT", (a, b) => a ** b],
@@ -77,6 +90,10 @@ export class Evaluator implements IEvaluator {
 
   getVar(name: string): number | undefined {
     return this.vars.get(name);
+  }
+
+  deleteVar(name: string): void {
+    this.vars.delete(name);
   }
 
   defineFn(name: string, fn: EvalFn, arity: number, variadic?: boolean): void {

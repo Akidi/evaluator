@@ -2,6 +2,7 @@ export type Punct = {
   kind: 'STAR'
     | 'PLUS'
     | 'MINUS'
+    | 'MULT'
     | 'SLASH'
     | 'LPAREN'
     | 'RPAREN'
@@ -15,6 +16,7 @@ export type Punct = {
 export const PUNCT_TO_CHAR: Record<Punct['kind'], string> = {
   'CARROT': '^',
   'COMMA': ',',
+  'MULT': '·',
   'LBRACKET': '[',
   'LPAREN': '(',
   'MINUS': '-',

@@ -1,6 +1,6 @@
-import { ICursor } from "../cursor";
-import { Token, RelOp, MAX_RELOP_LEN, RELOP_BY_LEN } from "../token";
-import { TokenRule } from "./types";
+import type { ICursor } from "../cursor";
+import { type Token, type RelOp, MAX_RELOP_LEN, RELOP_BY_LEN } from "../token";
+import type { TokenRule } from "./types";
 
 export class RelOpRule implements TokenRule {
   match(cursor: ICursor): boolean {

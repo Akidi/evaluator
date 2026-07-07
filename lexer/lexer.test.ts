@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import { ILexer, Lexer } from "./lexer";
+import { Lexer } from "./lexer";
 import { Token } from "./token";
 import { CursorSourceError, DuplicateDecimalError, MalformedDecimalNumberError, UnknownCharacterError } from "./errors";
+import { ILexer } from "./types";
 
 const at = (start: number, end: number, line: number = 1) => ({ start, end, line });
 

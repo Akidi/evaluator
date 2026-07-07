@@ -21,6 +21,7 @@ export class Parser implements IParser {
     ["MINUS", {bp: 50}],
     ["PERCENT", {bp: 60}],
     ["STAR", {bp: 60}],
+    ["MULT", {bp: 60}],
     ["SLASH", {bp: 60}],
     ["CARROT", {bp: 70, rightAssoc: true}],
     ["LPAREN", {bp: 80}]

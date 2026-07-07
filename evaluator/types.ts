@@ -5,6 +5,7 @@ export interface IEvaluator {
   evaluate(ast: Node, identList?: IdentItem[]): number | boolean;
   setVar(name: string, value: number): void;
   getVar(name: string): number | undefined;
+  deleteVar(name: string): void;
   defineFn(name: string, fn: EvalFn, arity: number, variadic?: boolean): void;
 }
 

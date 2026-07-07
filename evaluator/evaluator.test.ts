@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { Evaluator } from "./evaluator";
 import { IEvaluator } from "./types";
 import { ArityMismatchError, DivisionByZeroError, EvaluatorError, FunctionRedefinitionError, InvalidOperandError, UndefinedFunctionError, UndefinedVariableError } from "./errors";
-import { ILexer, Lexer } from "../lexer/lexer";
+import { Lexer } from "../lexer/lexer";
+import type { ILexer } from "../lexer/types";
 import { IParser } from "../parser/types";
 import { Parser } from "../parser/parser";
 

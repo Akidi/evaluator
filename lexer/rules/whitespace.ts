@@ -1,5 +1,5 @@
-import { ICursor } from "../cursor";
-import { TokenRule } from "./types";
+import type { ICursor } from "../cursor";
+import type { TokenRule } from "./types";
 
 export class WhitespaceRule implements TokenRule {
   match(cur: ICursor) {

@@ -1,4 +1,4 @@
-import { Cursor, ICursor } from "./cursor";
+import { Cursor, type ICursor } from "./cursor";
 import { UnknownCharacterError } from "./errors";
 import {
   IdentRule,
@@ -7,9 +7,9 @@ import {
   RelOpRule,
   WhitespaceRule,
 } from "./rules";
-import { TokenRule } from "./rules/types";
-import { Token } from "./token";
-import { ILexer } from "./types";
+import type { TokenRule } from "./rules/types";
+import type { Token } from "./token";
+import type { ILexer } from "./types";
 
 
 
