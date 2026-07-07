@@ -13,9 +13,9 @@
 		type EvalResult,
 		type StepperResult
 	} from '$lib/formula';
-	import { Heading, Button, Tag } from '$lib/components/atoms';
+	import { Heading, Button, Tag, Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from '$lib/components/atoms';
 	import { PageShell, Stack, Grid, Cluster } from '$lib/components/layouts';
-	import { Card, FormField, Tabs, TabList, Tab, TabPanel } from '$lib/components/molecules';
+	import { Card, FormField, Tabs, TabList, Tab, TabPanel, AlertBanner } from '$lib/components/molecules';
 
 	// --- Shared variables (used by both the evaluator and the stepper) ---
 	let vars = $state<VarRow[]>([{ name: '', value: '' }]);
@@ -239,7 +239,94 @@
 			</Card>
 		</Grid>
 
-		<!-- TASK4_EVALUATE_TAB_PLACEHOLDER -->
-		<!-- TASK5_STEPPER_TAB_PLACEHOLDER -->
+		<Tabs defaultValue="evaluate" onchange={(v) => (activeTab = v as 'evaluate' | 'stepper')}>
+			<TabList label="Formula sections">
+				<Tab value="evaluate">Evaluate</Tab>
+				<Tab value="stepper">Stepper</Tab>
+			</TabList>
+
+			<TabPanel value="evaluate">
+				<Grid min="320px" space="var(--space-4)">
+					<div style="grid-column: span 2;">
+						<Card>
+							{#snippet header()}
+								<Heading level={2} size="sm">Formula</Heading>
+							{/snippet}
+
+							<Stack space="var(--space-3)">
+								<Cluster space="var(--space-2)" align="flex-end" style="flex-wrap: nowrap;">
+									<div style="flex: 1; min-width: 0;">
+										<FormField
+											label="Formula"
+											placeholder="e.g. pow(x, 2) + 1"
+											bind:value={formula}
+											onkeydown={(e) => e.key === 'Enter' && doEvaluate()}
+										/>
+									</div>
+									<Button variant="primary" onclick={doEvaluate}>Evaluate</Button>
+								</Cluster>
+
+								{#if result}
+									{#if result.ok}
+										<AlertBanner variant="success" ondismiss={() => (result = null)}>
+											= {String(result.value)}
+										</AlertBanner>
+									{:else}
+										<AlertBanner variant="error" ondismiss={() => (result = null)}>
+											{result.error}
+										</AlertBanner>
+									{/if}
+								{/if}
+
+								<Stack space="var(--space-2)">
+									<Heading level={3} size="xs">Save as function</Heading>
+									<Cluster space="var(--space-2)" align="flex-end" style="flex-wrap: nowrap;">
+										<div style="flex: 1; min-width: 0;">
+											<FormField
+												label="Name"
+												placeholder="name"
+												bind:value={saveName}
+												onkeydown={(e) => e.key === 'Enter' && saveFormulaAsCustomFn()}
+											/>
+										</div>
+										<Button variant="secondary" onclick={saveFormulaAsCustomFn}>Save current</Button>
+									</Cluster>
+									<p style="font-size: var(--text-xs); color: var(--text-muted);">
+										Saves the formula above into <strong>Custom functions</strong> under this name.
+									</p>
+								</Stack>
+							</Stack>
+						</Card>
+					</div>
+
+					<Card>
+						{#snippet header()}
+							<Heading level={2} size="sm">Built-in functions</Heading>
+						{/snippet}
+
+						<Table>
+							<TableHead>
+								<TableRow>
+									<TableHeader>Signature</TableHeader>
+									<TableHeader>&nbsp;</TableHeader>
+								</TableRow>
+							</TableHead>
+							<TableBody>
+								{#each BUILT_IN_FNS as fn (fn.name)}
+									<TableRow>
+										<TableCell><code>{fn.signature}</code></TableCell>
+										<TableCell>
+											<Button variant="ghost" onclick={() => insertFn(fn.name, fn.arity)}>insert</Button>
+										</TableCell>
+									</TableRow>
+								{/each}
+							</TableBody>
+						</Table>
+					</Card>
+				</Grid>
+			</TabPanel>
+
+			<!-- TASK5_STEPPER_PANEL_PLACEHOLDER -->
+		</Tabs>
 	</Stack>
 </PageShell>
