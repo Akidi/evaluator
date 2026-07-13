@@ -1,5 +1,5 @@
 import { getContext, setContext } from 'svelte';
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import { fillMissingVarsForCustomFns, type VarRow, type CustomFnRow } from '$lib/formula';
 import type { Cell } from './types';
 
