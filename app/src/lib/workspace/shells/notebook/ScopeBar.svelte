@@ -11,7 +11,7 @@
 <Stack space="var(--space-3)" data-component="scope-bar">
 	<Heading level={2} size="sm">Scope</Heading>
 	<Cluster space="var(--space-2)" align="flex-end">
-		{#each ws.variables as v, i (i)}
+		{#each ws.variables as v, i (v.id)}
 			<Cluster space="var(--space-1)" align="flex-end" style="flex-wrap: nowrap;">
 				<div style="width: 6rem;">
 					<FormField label="Name" placeholder="name" bind:value={v.name} />

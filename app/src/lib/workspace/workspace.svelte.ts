@@ -7,12 +7,21 @@ const KEY = Symbol('workspace');
 const FN_STORAGE_KEY = 'formula.customFns';
 
 let counter = 0;
-const uid = () => `cell-${Date.now().toString(36)}-${counter++}`;
+const uid = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${counter++}`;
+
+export function newId(prefix: string): string {
+	return uid(prefix);
+}
 
 function makeCell(type: 'formula' | 'stepper'): Cell {
 	return type === 'formula'
-		? { id: uid(), type: 'formula', expr: '' }
-		: { id: uid(), type: 'stepper', rules: [{ variable: '', inc: '', div: '' }], steps: 5 };
+		? { id: uid('cell'), type: 'formula', expr: '' }
+		: {
+				id: uid('cell'),
+				type: 'stepper',
+				rules: [{ id: uid('rule'), variable: '', inc: '', div: '' }],
+				steps: 5
+			};
 }
 
 export interface Workspace {
@@ -32,7 +41,7 @@ export interface Workspace {
 }
 
 export function createWorkspace(): Workspace {
-	const variables = $state<VarRow[]>([{ name: '', value: '' }]);
+	const variables = $state<VarRow[]>([{ id: uid('var'), name: '', value: '' }]);
 	const functions = $state<CustomFnRow[]>([{ name: '', expr: '', params: '' }]);
 	const cells = $state<Cell[]>([makeCell('formula')]);
 
@@ -71,7 +80,7 @@ export function createWorkspace(): Workspace {
 			return cells;
 		},
 		addVariable() {
-			variables.push({ name: '', value: '' });
+			variables.push({ id: uid('var'), name: '', value: '' });
 		},
 		removeVariable(i: number) {
 			variables.splice(i, 1);
@@ -87,6 +96,9 @@ export function createWorkspace(): Workspace {
 		loadFunctions,
 		refreshDerivedVars() {
 			fillMissingVarsForCustomFns(variables, functions);
+			for (const v of variables) {
+				if (!v.id) v.id = uid('var');
+			}
 		},
 		addCell(type) {
 			cells.push(makeCell(type));

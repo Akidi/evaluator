@@ -54,6 +54,17 @@ describe('createWorkspace', () => {
 		expect(ws.variables.length).toBe(1);
 	});
 
+	test('addVariable mints distinct, defined ids so blank-named rows stay uniquely keyable', () => {
+		const ws = createWorkspace();
+		ws.addVariable();
+		ws.addVariable();
+		const ids = ws.variables.map((v) => v.id);
+		for (const id of ids) {
+			expect(id).toBeDefined();
+		}
+		expect(new Set(ids).size).toBe(ids.length);
+	});
+
 	test('loadFunctions does not throw when localStorage contains invalid JSON', () => {
 		const ws = createWorkspace();
 		const initialFunctionCount = ws.functions.length;

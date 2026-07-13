@@ -6,8 +6,8 @@ import { Lexer } from '$formula/lexer/lexer';
 import { Parser } from '$formula/parser/parser';
 import type { StepResult } from '$formula/stepper/types';
 
-export type VarRow = { name: string; value: string };
-export type RuleRow = { variable: string; inc: string; div: string };
+export type VarRow = { id?: string; name: string; value: string };
+export type RuleRow = { id?: string; variable: string; inc: string; div: string };
 export type CustomFnRow = { name: string; expr: string; params: string };
 
 export type EvalResult =
