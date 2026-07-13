@@ -105,11 +105,7 @@
 								autofocus
 								onkeydown={(e: KeyboardEvent) => {
 									if (e.key === 'Enter')
-										commitNewRuleVariable(
-											i,
-											r.id!,
-											(e.currentTarget as HTMLInputElement).value
-										);
+										commitNewRuleVariable(i, r.id!, (e.currentTarget as HTMLInputElement).value);
 									if (e.key === 'Escape') cancelNewRuleVariable(r.id!);
 								}}
 								onblur={(e: FocusEvent) =>
