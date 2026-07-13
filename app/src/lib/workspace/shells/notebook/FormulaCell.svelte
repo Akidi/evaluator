@@ -16,10 +16,19 @@
 	const ws = getWorkspace();
 	let saveName = $state('');
 
+	let debouncedExpr = $state('');
+	let timer: ReturnType<typeof setTimeout>;
+	$effect(() => {
+		const next = cell.expr;
+		clearTimeout(timer);
+		timer = setTimeout(() => (debouncedExpr = next), 120);
+		return () => clearTimeout(timer);
+	});
+
 	let result = $derived(
-		cell.expr.trim() === '' ? null : evaluate(cell.expr, ws.variables, ws.functions)
+		debouncedExpr.trim() === '' ? null : evaluate(debouncedExpr, ws.variables, ws.functions)
 	);
-	let refs = $derived(getReferencedVars(cell.expr));
+	let refs = $derived(getReferencedVars(debouncedExpr));
 
 	// Resolve which variable to sweep + a default 1..20 range.
 	// A previously-picked cell.xVar is only trusted while it's still referenced
@@ -27,11 +36,11 @@
 	// defaultXVar (which may itself be undefined for 0 or 2+ referenced vars)
 	// rather than keep sweeping an orphaned variable.
 	let effectiveXVar = $derived(
-		cell.xVar && refs.includes(cell.xVar) ? cell.xVar : defaultXVar(cell.expr)
+		cell.xVar && refs.includes(cell.xVar) ? cell.xVar : defaultXVar(debouncedExpr)
 	);
 	let xRange = $derived(cell.xRange ?? { min: 1, max: 20 });
 	let curve = $derived(
-		effectiveXVar ? sweepFormula(cell.expr, ws.variables, ws.functions, effectiveXVar, xRange) : []
+		effectiveXVar ? sweepFormula(debouncedExpr, ws.variables, ws.functions, effectiveXVar, xRange) : []
 	);
 
 	function saveAsFunction() {

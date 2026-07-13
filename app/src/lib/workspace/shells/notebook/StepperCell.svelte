@@ -24,7 +24,7 @@
 
 	const ws = getWorkspace();
 
-	let outcome = $derived(runStepper(cell.rules, cell.steps, ws.variables, ws.functions));
+	let outcome = $derived(runStepper(cell.rules, Math.min(cell.steps, 500), ws.variables, ws.functions));
 	let series = $derived(outcome.ok ? stepperSeries(outcome.result.timeline) : []);
 	let varNames = $derived(series.map((s) => s.name));
 
