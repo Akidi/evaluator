@@ -260,7 +260,7 @@
 											label="Formula"
 											placeholder="e.g. pow(x, 2) + 1"
 											bind:value={formula}
-											onkeydown={(e) => e.key === 'Enter' && doEvaluate()}
+											onkeydown={(e: KeyboardEvent) => e.key === 'Enter' && doEvaluate()}
 										/>
 									</div>
 									<Button variant="primary" onclick={doEvaluate}>Evaluate</Button>
@@ -286,7 +286,7 @@
 												label="Name"
 												placeholder="name"
 												bind:value={saveName}
-												onkeydown={(e) => e.key === 'Enter' && saveFormulaAsCustomFn()}
+												onkeydown={(e: KeyboardEvent) => e.key === 'Enter' && saveFormulaAsCustomFn()}
 											/>
 										</div>
 										<Button variant="secondary" onclick={saveFormulaAsCustomFn}>Save current</Button>
@@ -307,8 +307,7 @@
 						<Table>
 							<TableHead>
 								<TableRow>
-									<TableHeader>Signature</TableHeader>
-									<TableHeader>&nbsp;</TableHeader>
+									<TableHeader colspan={2}>Signature</TableHeader>
 								</TableRow>
 							</TableHead>
 							<TableBody>
@@ -365,11 +364,11 @@
 												label="Variable"
 												placeholder="new name"
 												autofocus
-												onkeydown={(e) => {
-													if (e.key === 'Enter') commitNewRuleVariable(i, e.currentTarget.value);
+												onkeydown={(e: KeyboardEvent) => {
+													if (e.key === 'Enter') commitNewRuleVariable(i, (e.currentTarget as HTMLInputElement).value);
 													if (e.key === 'Escape') cancelNewRuleVariable(i);
 												}}
-												onblur={(e) => commitNewRuleVariable(i, e.currentTarget.value)}
+												onblur={(e: KeyboardEvent) => commitNewRuleVariable(i, (e.currentTarget as HTMLInputElement).value)}
 											/>
 										</div>
 									{:else}

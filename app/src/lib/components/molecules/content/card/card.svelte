@@ -55,6 +55,7 @@
     background: var(--card-bg, var(--surface));
     border: 1px solid var(--card-border-color, var(--border));
     border-radius: var(--card-radius, var(--radius-m, 0.5rem));
+    box-shadow: var(--card-shadow, var(--shadow-sm));
   }
 
   /* Clip only the media to the card's rounded corners. Clipping the whole

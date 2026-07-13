@@ -10,6 +10,16 @@
 		/>
 
 		<meta name="text-scale" content="scale" />
+
+		<!-- Apply the saved theme before first paint to avoid a flash of the wrong
+		     theme. Must stay in sync with ThemeToggle's storageKey ('theme'). -->
+		<script>
+			try {
+				var t = localStorage.getItem('theme');
+				if (t === 'light' || t === 'dark')
+					document.documentElement.setAttribute('data-theme', t);
+			} catch (e) {}
+		</script>
 		%sveltekit.head%
 	</head>
 

@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import type { HTMLAttributes } from 'svelte/elements';
+  import type { HTMLTdAttributes } from 'svelte/elements';
 
-  interface Props extends HTMLAttributes<HTMLTableCellElement> {
+  interface Props extends HTMLTdAttributes {
     children: Snippet;
   }
 

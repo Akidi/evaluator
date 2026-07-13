@@ -1,3 +1,6 @@
+// Actions
+export { default as ThemeToggle } from './actions/theme-toggle/theme-toggle.svelte';
+
 // Content
 export { default as Card } from './content/card/card.svelte';
 export { default as CodeBlock } from './content/code-block/code-block.svelte';

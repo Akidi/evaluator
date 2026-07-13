@@ -1,1 +1,10 @@
 @import '$lib/assets/css/index.css';
+
+/*
+  App-level page ground: sink the page background so raised surfaces (cards,
+  etc.) lift off it. Kept here rather than in the shared reset so the design
+  system stays neutral for other consumers.
+*/
+body {
+  background-color: var(--surface-sunken);
+}

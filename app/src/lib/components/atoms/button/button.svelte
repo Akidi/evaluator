@@ -169,7 +169,23 @@
     transition:
       background var(--duration-fast) var(--ease-default),
       color var(--duration-fast) var(--ease-default),
-      border-color var(--duration-fast) var(--ease-default);
+      border-color var(--duration-fast) var(--ease-default),
+      box-shadow var(--duration-fast) var(--ease-default),
+      transform var(--duration-fast) var(--ease-default);
+  }
+
+  /* Solid (colored) variants sit slightly raised and lift on hover. Ghost and
+     plain (no variant) buttons stay flat. */
+  .btn[data-variant]:not([data-variant='ghost']) {
+    box-shadow: var(--button-shadow, var(--shadow-xs));
+  }
+  .btn[data-variant]:not([data-variant='ghost']):hover:not(:disabled):not([aria-disabled='true']) {
+    box-shadow: var(--button-shadow-hover, var(--shadow-sm));
+    transform: translateY(-1px);
+  }
+  .btn[data-variant]:not([data-variant='ghost']):active:not(:disabled):not([aria-disabled='true']) {
+    box-shadow: var(--button-shadow, var(--shadow-xs));
+    transform: translateY(0);
   }
 
   .btn:focus-visible {

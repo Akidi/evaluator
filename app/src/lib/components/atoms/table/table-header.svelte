@@ -1,10 +1,9 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import type { HTMLAttributes } from 'svelte/elements';
+  import type { HTMLThAttributes } from 'svelte/elements';
 
-  interface Props extends HTMLAttributes<HTMLTableCellElement> {
+  interface Props extends HTMLThAttributes {
     children: Snippet;
-    scope?: 'col' | 'row' | 'colgroup' | 'rowgroup';
   }
 
   let { children, scope = 'col', ...rest }: Props = $props();

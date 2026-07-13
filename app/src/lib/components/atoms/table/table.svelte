@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import type { HTMLAttributes } from 'svelte/elements';
+  import type { HTMLTableAttributes } from 'svelte/elements';
 
-  interface Props extends HTMLAttributes<HTMLTableElement> {
+  interface Props extends HTMLTableAttributes {
     children: Snippet;
     caption?: string;
   }
