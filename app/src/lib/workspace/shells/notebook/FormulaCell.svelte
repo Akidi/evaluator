@@ -22,10 +22,16 @@
 	let refs = $derived(getReferencedVars(cell.expr));
 
 	// Resolve which variable to sweep + a default 1..20 range.
-	let xVar = $derived(cell.xVar ?? defaultXVar(cell.expr));
+	// A previously-picked cell.xVar is only trusted while it's still referenced
+	// by the current formula; once an edit drops it from `refs`, fall back to
+	// defaultXVar (which may itself be undefined for 0 or 2+ referenced vars)
+	// rather than keep sweeping an orphaned variable.
+	let effectiveXVar = $derived(
+		cell.xVar && refs.includes(cell.xVar) ? cell.xVar : defaultXVar(cell.expr)
+	);
 	let xRange = $derived(cell.xRange ?? { min: 1, max: 20 });
 	let curve = $derived(
-		xVar ? sweepFormula(cell.expr, ws.variables, ws.functions, xVar, xRange) : []
+		effectiveXVar ? sweepFormula(cell.expr, ws.variables, ws.functions, effectiveXVar, xRange) : []
 	);
 
 	function saveAsFunction() {
@@ -64,14 +70,19 @@
 			</Cluster>
 		{/if}
 
-		{#if xVar && curve.length > 0}
-			<LineChart series={[{ name: cell.expr, points: curve }]} fillArea xLabel={xVar} />
+		{#if effectiveXVar && curve.length > 0}
+			<LineChart series={[{ name: cell.expr, points: curve }]} fillArea xLabel={effectiveXVar} />
+		{/if}
+
+		{#if refs.length > 0}
 			<Cluster space="var(--space-2)" align="flex-end" style="flex-wrap: nowrap;">
 				<div style="width: 7rem;">
 					<label class="mini"
 						>sweep
 						<Select bind:value={cell.xVar}>
-							{#each refs as name (name)}<option value={name}>{name}</option>{/each}
+							{#each refs as name (name)}<option value={name} selected={name === effectiveXVar}
+									>{name}</option
+								>{/each}
 						</Select>
 					</label>
 				</div>
