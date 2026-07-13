@@ -1,8 +1,8 @@
-import { ICursor } from "../cursor";
+import type { ICursor } from "../cursor";
 import { MalformedDecimalNumberError, DuplicateDecimalError } from "../errors";
-import { Token } from "../token";
+import type { Token } from "../token";
 import { isDigit } from "./shared";
-import { TokenRule } from "./types";
+import type { TokenRule } from "./types";
 
 export class NumberRule implements TokenRule {
   match(cur: ICursor): boolean {

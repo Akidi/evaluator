@@ -1,7 +1,7 @@
-import { ICursor } from "../cursor";
-import { Token } from "../token";
+import type { ICursor } from "../cursor";
+import type { Token } from "../token";
 import { isDigit, isLetter } from "./shared";
-import { TokenRule } from "./types";
+import type { TokenRule } from "./types";
 
 export class IdentRule implements TokenRule {
   match(cur: ICursor): boolean {
