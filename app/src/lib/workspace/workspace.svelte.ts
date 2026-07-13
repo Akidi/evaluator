@@ -46,13 +46,18 @@ export function createWorkspace(): Workspace {
 		if (!browser) return;
 		const raw = localStorage.getItem(FN_STORAGE_KEY);
 		if (!raw) return;
-		const parsed: Partial<CustomFnRow>[] = JSON.parse(raw);
-		functions.splice(
-			0,
-			functions.length,
-			...parsed.map((f) => ({ name: f.name ?? '', expr: f.expr ?? '', params: f.params ?? '' }))
-		);
-		if (functions.length === 0) functions.push({ name: '', expr: '', params: '' });
+		try {
+			const parsed: Partial<CustomFnRow>[] = JSON.parse(raw);
+			functions.splice(
+				0,
+				functions.length,
+				...parsed.map((f) => ({ name: f.name ?? '', expr: f.expr ?? '', params: f.params ?? '' }))
+			);
+			if (functions.length === 0) functions.push({ name: '', expr: '', params: '' });
+		} catch {
+			// Silent fail on corrupted localStorage
+			return;
+		}
 	}
 
 	return {

@@ -53,4 +53,23 @@ describe('createWorkspace', () => {
 		ws.removeVariable(0);
 		expect(ws.variables.length).toBe(1);
 	});
+
+	test('loadFunctions does not throw when localStorage contains invalid JSON', () => {
+		const ws = createWorkspace();
+		const initialFunctionCount = ws.functions.length;
+
+		// Mock localStorage.getItem to return invalid JSON
+		const originalGetItem = localStorage.getItem;
+		localStorage.getItem = () => 'not valid json{';
+
+		// Should not throw
+		expect(() => ws.loadFunctions()).not.toThrow();
+
+		// Functions array should still be valid and unchanged
+		expect(Array.isArray(ws.functions)).toBe(true);
+		expect(ws.functions.length).toBe(initialFunctionCount);
+
+		// Restore localStorage
+		localStorage.getItem = originalGetItem;
+	});
 });
