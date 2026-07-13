@@ -17,3 +17,5 @@
 	<option value="pasta">Pasta</option>
 	<option value="salad">Salad</option>
 </Select>
+
+<p data-testid="bound-value">{selectedValue}</p>
