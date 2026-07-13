@@ -1021,7 +1021,7 @@ A live formula cell: expression in, `= value` out, referenced-var tags, save-as-
 - Create: `app/src/lib/workspace/shells/notebook/FormulaCell.svelte`
 
 **Interfaces:**
-- Consumes: `getWorkspace`; `evaluate`, `getReferencedVars` from `$lib/formula`; `sweepFormula`, `defaultXVar` from `$lib/workspace/curve`; `LineChart`, `FormField`, `Card` from molecules; `Button`, `Tag` from atoms; `Cluster`, `Stack` from layouts; type `FormulaCell` from `$lib/workspace/types`.
+- Consumes: `getWorkspace`; `evaluate`, `getReferencedVars` from `$lib/formula`; `sweepFormula`, `defaultXVar` from `$lib/workspace/curve`; `LineChart`, `FormField`, `Card` from molecules; `Button`, `Tag`, `Select` from atoms; `Cluster`, `Stack` from layouts; type `FormulaCell` from `$lib/workspace/types`.
 - Produces: default export `FormulaCell` with prop `cell: FormulaCell` (bindable via the store's array element).
 
 - [ ] **Step 1: Write the component**
@@ -1033,8 +1033,8 @@ A live formula cell: expression in, `= value` out, referenced-var tags, save-as-
   import { evaluate, getReferencedVars } from '$lib/formula';
   import { sweepFormula, defaultXVar } from '$lib/workspace/curve';
   import type { FormulaCell } from '$lib/workspace/types';
-  import { LineChart, FormField } from '$lib/components/molecules';
-  import { Button, Tag } from '$lib/components/atoms';
+  import { LineChart, FormField, Card } from '$lib/components/molecules';
+  import { Button, Tag, Select } from '$lib/components/atoms';
   import { Cluster, Stack } from '$lib/components/layouts';
 
   interface Props {
@@ -1068,7 +1068,7 @@ A live formula cell: expression in, `= value` out, referenced-var tags, save-as-
   }
 </script>
 
-<article data-component="formula-cell">
+<Card>
   <Stack space="var(--space-3)">
     <FormField label="Formula" placeholder="e.g. 80 + floor(pow(level, 1.6))" bind:value={cell.expr} mono />
 
@@ -1091,9 +1091,9 @@ A live formula cell: expression in, `= value` out, referenced-var tags, save-as-
       <Cluster space="var(--space-2)" align="flex-end" style="flex-wrap: nowrap;">
         <div style="width: 7rem;">
           <label class="mini">sweep
-            <select bind:value={cell.xVar}>
+            <Select bind:value={cell.xVar}>
               {#each refs as name (name)}<option value={name}>{name}</option>{/each}
-            </select>
+            </Select>
           </label>
         </div>
         <div style="width: 5rem;">
@@ -1116,16 +1116,9 @@ A live formula cell: expression in, `= value` out, referenced-var tags, save-as-
       <Button variant="ghost" onclick={() => ws.removeCell(cell.id)} aria-label="Remove cell">−</Button>
     </Cluster>
   </Stack>
-</article>
+</Card>
 
 <style>
-  [data-component='formula-cell'] {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md, 0.5rem);
-    box-shadow: var(--shadow-sm);
-    padding: var(--space-4);
-  }
   .result {
     font-family: var(--font-mono);
     font-size: var(--text-xl);
@@ -1173,7 +1166,7 @@ The stepper reframed as a cell: rules editor + live multi-series curve + collaps
 - Create: `app/src/lib/workspace/shells/notebook/StepperCell.svelte`
 
 **Interfaces:**
-- Consumes: `getWorkspace`; `runStepper` from `$lib/formula`; `stepperSeries` from `$lib/workspace/curve`; `LineChart`, `FormField` from molecules; `Button`, `Select`, `Table`, `TableHead`, `TableHeader`, `TableRow`, `TableBody`, `TableCell` from atoms; `Cluster`, `Stack` from layouts; type `StepperCell` from `$lib/workspace/types`.
+- Consumes: `getWorkspace`; `runStepper` from `$lib/formula`; `stepperSeries` from `$lib/workspace/curve`; `LineChart`, `FormField`, `Card` from molecules; `Button`, `Select`, `Table`, `TableHead`, `TableHeader`, `TableRow`, `TableBody`, `TableCell` from atoms; `Cluster`, `Stack` from layouts; type `StepperCell` from `$lib/workspace/types`.
 - Produces: default export `StepperCell` with prop `cell: StepperCell`.
 
 - [ ] **Step 1: Write the component**
@@ -1185,7 +1178,7 @@ The stepper reframed as a cell: rules editor + live multi-series curve + collaps
   import { runStepper } from '$lib/formula';
   import { stepperSeries } from '$lib/workspace/curve';
   import type { StepperCell } from '$lib/workspace/types';
-  import { LineChart, FormField } from '$lib/components/molecules';
+  import { LineChart, FormField, Card } from '$lib/components/molecules';
   import {
     Button,
     Select,
@@ -1215,23 +1208,85 @@ The stepper reframed as a cell: rules editor + live multi-series curve + collaps
   function removeRule(i: number) {
     cell.rules.splice(i, 1);
   }
+  function moveRuleUp(i: number) {
+    if (i === 0) return;
+    [cell.rules[i - 1], cell.rules[i]] = [cell.rules[i], cell.rules[i - 1]];
+  }
+  function moveRuleDown(i: number) {
+    if (i === cell.rules.length - 1) return;
+    [cell.rules[i], cell.rules[i + 1]] = [cell.rules[i + 1], cell.rules[i]];
+  }
+
+  // Tracks which rule rows are mid-flow adding a brand new variable, keyed by
+  // rule index, so the dropdown can swap to a name input just for that row.
+  const NEW_VAR_OPTION = '__new__';
+  let addingVarForRule = $state<Set<number>>(new Set());
+
+  function onRuleVariableSelect(i: number, value: string) {
+    if (value === NEW_VAR_OPTION) {
+      addingVarForRule.add(i);
+      addingVarForRule = new Set(addingVarForRule);
+      cell.rules[i].variable = '';
+    } else {
+      cell.rules[i].variable = value;
+    }
+  }
+  function commitNewRuleVariable(i: number, name: string) {
+    const trimmed = name.trim();
+    if (trimmed === '') {
+      cancelNewRuleVariable(i);
+      return;
+    }
+    if (!ws.variables.some((v) => v.name.trim() === trimmed)) {
+      ws.variables.push({ name: trimmed, value: '0' });
+    }
+    cell.rules[i].variable = trimmed;
+    addingVarForRule.delete(i);
+    addingVarForRule = new Set(addingVarForRule);
+  }
+  function cancelNewRuleVariable(i: number) {
+    addingVarForRule.delete(i);
+    addingVarForRule = new Set(addingVarForRule);
+  }
 </script>
 
-<article data-component="stepper-cell">
+<Card>
   <Stack space="var(--space-4)">
     <Stack space="var(--space-2)">
       {#each cell.rules as r, i (i)}
         <Cluster space="var(--space-2)" align="flex-end">
-          <div style="width: 8rem;">
-            <label class="mini">variable
-              <Select bind:value={r.variable}>
-                <option value="" disabled>variable</option>
-                {#each ws.variables as v (v.name)}
-                  {#if v.name.trim() !== ''}<option value={v.name.trim()}>{v.name.trim()}</option>{/if}
-                {/each}
-              </Select>
-            </label>
-          </div>
+          <Cluster space="0" style="flex-direction: column; flex-shrink: 0;">
+            <Button variant="ghost" disabled={i === 0} onclick={() => moveRuleUp(i)} aria-label="Move rule up">↑</Button>
+            <Button variant="ghost" disabled={i === cell.rules.length - 1} onclick={() => moveRuleDown(i)} aria-label="Move rule down">↓</Button>
+          </Cluster>
+
+          {#if addingVarForRule.has(i)}
+            <div style="width: 7rem; flex-shrink: 0;">
+              <FormField
+                label="Variable"
+                placeholder="new name"
+                autofocus
+                onkeydown={(e: KeyboardEvent) => {
+                  if (e.key === 'Enter') commitNewRuleVariable(i, (e.currentTarget as HTMLInputElement).value);
+                  if (e.key === 'Escape') cancelNewRuleVariable(i);
+                }}
+                onblur={(e: FocusEvent) => commitNewRuleVariable(i, (e.currentTarget as HTMLInputElement).value)}
+              />
+            </div>
+          {:else}
+            <div style="width: 8rem; flex-shrink: 0;">
+              <label class="mini">variable
+                <Select value={r.variable} onchange={(e) => onRuleVariableSelect(i, e.currentTarget.value)}>
+                  <option value="" disabled>variable</option>
+                  {#each ws.variables as v (v.name)}
+                    {#if v.name.trim() !== ''}<option value={v.name.trim()}>{v.name.trim()}</option>{/if}
+                  {/each}
+                  <option value={NEW_VAR_OPTION}>+ new variable</option>
+                </Select>
+              </label>
+            </div>
+          {/if}
+
           <div style="flex: 1; min-width: 0;"><FormField label="Inc" placeholder="inc" bind:value={r.inc} /></div>
           <div style="width: 5rem;"><FormField label="Div" placeholder="div" bind:value={r.div} /></div>
           <Button variant="ghost" onclick={() => removeRule(i)} aria-label="Remove rule">−</Button>
@@ -1269,16 +1324,9 @@ The stepper reframed as a cell: rules editor + live multi-series curve + collaps
       </details>
     {/if}
   </Stack>
-</article>
+</Card>
 
 <style>
-  [data-component='stepper-cell'] {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md, 0.5rem);
-    box-shadow: var(--shadow-sm);
-    padding: var(--space-4);
-  }
   .mini {
     display: flex;
     flex-direction: column;
@@ -1300,7 +1348,7 @@ The stepper reframed as a cell: rules editor + live multi-series curve + collaps
 </style>
 ```
 
-> **Note:** This intentionally drops the earlier "+ new variable" inline-add and rule reorder buttons for v1 simplicity — variables are managed in the ScopeBar now. If you want them back, they are a follow-up, not part of this task.
+This mirrors the reorder and inline "+ new variable" behavior from the original page's Stepper tab (`moveRuleUp`/`moveRuleDown`, `addingVarForRule` Set, `commitNewRuleVariable`/`cancelNewRuleVariable`) exactly, scoped to `cell.rules` and `ws.variables` instead of page-local state — per the spec's "preserved" requirement.
 
 - [ ] **Step 2: Verify it type-checks**
 
@@ -1540,7 +1588,7 @@ git commit -m "perf: debounce live-eval and cap stepper steps"
 - Extensibility seam (context contract) → Task 4 `get/setWorkspace`; documented in spec. ✅
 - Verification (pnpm test convention, Storybook, dark mode) → Tasks 2, 9. ✅
 
-**Deferred from spec (explicitly out of v1 scope, noted in tasks):** full-workspace persistence (functions only for now); stepper "+ new variable" inline-add and rule reorder (managed via ScopeBar); shell-switcher (seam only).
+**Deferred from spec (explicitly out of v1 scope, noted in tasks):** full-workspace persistence (functions only for now); shell-switcher (seam only).
 
 **Placeholder scan:** No TBD/TODO. The two inline `> Note:` blocks describe concrete fallbacks (drop `mono`, drop reorder) with exact actions, not deferred work.
 
