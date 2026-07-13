@@ -1,5 +1,6 @@
 <!-- FormulaCell.svelte -->
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { getWorkspace } from '$lib/workspace/workspace.svelte';
 	import { evaluate, getReferencedVars } from '$lib/formula';
 	import { sweepFormula, defaultXVar } from '$lib/workspace/curve';
@@ -16,7 +17,7 @@
 	const ws = getWorkspace();
 	let saveName = $state('');
 
-	let debouncedExpr = $state('');
+	let debouncedExpr = $state(untrack(() => cell.expr));
 	let timer: ReturnType<typeof setTimeout>;
 	$effect(() => {
 		const next = cell.expr;
