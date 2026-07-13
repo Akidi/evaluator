@@ -37,7 +37,7 @@
   }: Props = $props();
 </script>
 
-<select data-component="select" {name} {...rest}>{@render children()}</select>
+<select data-component="select" {name} bind:value {...rest}>{@render children()}</select>
 
 <style>
   [data-component='select'] {
