@@ -14,6 +14,11 @@ describe('computeBounds', () => {
     expect(b.minY).toBeLessThan(3);
     expect(b.maxY).toBeGreaterThan(3);
   });
+  test('pads a flat x range so a single point is centered, not left-pinned', () => {
+    const b = computeBounds([[{ x: 5, y: 0 }, { x: 5, y: 4 }]]);
+    expect(b.minX).toBeLessThan(5);
+    expect(b.maxX).toBeGreaterThan(5);
+  });
 });
 
 describe('project', () => {

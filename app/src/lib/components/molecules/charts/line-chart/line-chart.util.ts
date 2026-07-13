@@ -26,7 +26,10 @@ export function computeBounds(seriesPoints: Point[][]): Bounds {
     minY -= 1;
     maxY += 1;
   }
-  if (minX === maxX) maxX = minX + 1;
+  if (minX === maxX) {
+    minX -= 1;
+    maxX += 1;
+  }
   return { minX, maxX, minY, maxY };
 }
 
