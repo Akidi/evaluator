@@ -1,7 +1,7 @@
 import { UndefinedVariableError } from "../evaluator/errors";
-import { IEvaluator } from "../evaluator/types";
-import { Formulate, IFormulate } from "../formule";
-import { IStepper, Rule, Snapshot, StepResult } from "./types";
+import type { IEvaluator } from "../evaluator/types";
+import { Formulate, type IFormulate } from "../formule";
+import type { IStepper, Rule, Snapshot, StepResult } from "./types";
 
 export class Stepper implements IStepper {
   private formulate: IFormulate;

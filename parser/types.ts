@@ -1,4 +1,4 @@
-import { Kind, Token } from "../lexer/token";
+import type { Kind, Token } from "../lexer/token";
 
 export type NumNode   = { type: 'Num', value: number };
 export type IdentNode = { type: 'Ident', name: string };

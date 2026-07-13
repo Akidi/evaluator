@@ -1,9 +1,9 @@
 import { Evaluator } from "./evaluator/evaluator";
-import { IEvaluator } from "./evaluator/types";
+import type { IEvaluator } from "./evaluator/types";
 import { Lexer } from "./lexer/lexer";
-import { ILexer } from "./lexer/types";
+import type { ILexer } from "./lexer/types";
 import { Parser } from "./parser/parser";
-import { IParser } from "./parser/types";
+import type { IParser } from "./parser/types";
 
 const lexer = new Lexer();
 const parser = new Parser();

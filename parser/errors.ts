@@ -1,4 +1,4 @@
-import { Kind, Token } from "../lexer/token";
+import type { Kind, Token } from "../lexer/token";
 import { ProjectError } from "../shared/errors";
 
 export class ParserError extends ProjectError {}

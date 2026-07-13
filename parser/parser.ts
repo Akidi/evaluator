@@ -1,6 +1,6 @@
-import { Kind, Token } from "../lexer/token";
+import type { Kind, Token } from "../lexer/token";
 import { UnexpectedTokenKind } from "./errors";
-import { IdentItem, BinaryNode, CallNode, IdentNode, IParser, Node, NumNode, TernaryNode, UnaryNode } from "./types";
+import type { IdentItem, BinaryNode, CallNode, IdentNode, IParser, Node, NumNode, TernaryNode, UnaryNode } from "./types";
 
 export class Parser implements IParser {
   pos: number = 0;

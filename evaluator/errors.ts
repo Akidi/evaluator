@@ -1,4 +1,4 @@
-import { Node } from "../parser/types";
+import type { Node } from "../parser/types";
 import { ProjectError } from "../shared/errors";
 
 export class EvaluatorError extends ProjectError {

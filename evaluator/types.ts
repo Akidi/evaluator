@@ -1,5 +1,4 @@
-import { Kind } from "../lexer/token";
-import { IdentItem, Node } from "../parser/types";
+import type { IdentItem, Node } from "../parser/types";
 
 export interface IEvaluator {
   evaluate(ast: Node, identList?: IdentItem[]): number | boolean;
