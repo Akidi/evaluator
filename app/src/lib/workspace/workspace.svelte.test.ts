@@ -65,6 +65,37 @@ describe('createWorkspace', () => {
 		expect(new Set(ids).size).toBe(ids.length);
 	});
 
+	test('addFunction mints distinct, defined ids so blank-named rows stay uniquely keyable', () => {
+		const ws = createWorkspace();
+		ws.addFunction();
+		ws.addFunction();
+		const ids = ws.functions.map((f) => f.id);
+		for (const id of ids) {
+			expect(id).toBeDefined();
+		}
+		expect(new Set(ids).size).toBe(ids.length);
+	});
+
+	test('loadFunctions mints ids for functions restored from localStorage', () => {
+		const ws = createWorkspace();
+		const originalGetItem = localStorage.getItem;
+		localStorage.getItem = () =>
+			JSON.stringify([
+				{ name: 'double', expr: 'n * 2', params: 'n' },
+				{ name: 'triple', expr: 'n * 3', params: 'n' }
+			]);
+
+		ws.loadFunctions();
+
+		const ids = ws.functions.map((f) => f.id);
+		for (const id of ids) {
+			expect(id).toBeDefined();
+		}
+		expect(new Set(ids).size).toBe(ids.length);
+
+		localStorage.getItem = originalGetItem;
+	});
+
 	test('loadFunctions does not throw when localStorage contains invalid JSON', () => {
 		const ws = createWorkspace();
 		const initialFunctionCount = ws.functions.length;

@@ -18,7 +18,7 @@
 		<summary><Heading level={2} size="sm">Functions</Heading></summary>
 
 		<Stack space="var(--space-3)">
-			{#each ws.functions as f, i (i)}
+			{#each ws.functions as f, i (f.id)}
 				<Stack space="var(--space-1)">
 					<Cluster space="var(--space-2)" align="flex-end">
 						<div style="width: 7rem; flex-shrink: 0;">

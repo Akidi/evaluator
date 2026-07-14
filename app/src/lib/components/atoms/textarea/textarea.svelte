@@ -14,8 +14,8 @@
   @example Basic
   <Textarea placeholder="Enter notes..." oninput={handleInput} />
 
-  @example Controlled
-  <Textarea value={notes} oninput={e => notes = e.currentTarget.value} />
+  @example Bound value
+  <Textarea bind:value={notes} />
 
   @example Disabled
   <Textarea disabled value="Read-only content" />
@@ -36,6 +36,7 @@
       event.stopPropagation();
       return;
     }
+    value = event.currentTarget.value;
     oninput?.(event);
   };
 
@@ -45,6 +46,7 @@
       event.stopPropagation();
       return;
     }
+    value = event.currentTarget.value;
     onchange?.(event);
   };
 </script>

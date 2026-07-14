@@ -8,7 +8,7 @@ import type { StepResult } from '$formula/stepper/types';
 
 export type VarRow = { id?: string; name: string; value: string };
 export type RuleRow = { id?: string; variable: string; inc: string; div: string };
-export type CustomFnRow = { name: string; expr: string; params: string };
+export type CustomFnRow = { id?: string; name: string; expr: string; params: string };
 
 export type EvalResult =
 	| { ok: true; value: number | boolean }

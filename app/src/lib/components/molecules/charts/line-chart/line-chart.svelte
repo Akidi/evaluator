@@ -14,7 +14,12 @@
   cycle through this 2-color set — pass an explicit `color` per series to avoid
   repeats when plotting 3+ series.
 
-  @prop series    - One or more { name, points: {x,y}[], color? }.
+  @prop series    - One or more { name, points: {x,y}[], color?, id? }. `id`, if
+                    provided, is used to key each series instead of `name` — pass
+                    a stable id when `name` is a live-editable label (e.g. a
+                    formula expression the user is still typing), so the path's
+                    `d` transition isn't defeated by the key changing every
+                    keystroke. Falls back to `name` when omitted.
   @prop height    - CSS height of the plot. Default: '11rem'.
   @prop showAxes  - Render baseline + left axis and min/max tick labels. Default: true.
   @prop fillArea  - Area fill under the first series (best for single-series). Default: false.
@@ -27,6 +32,7 @@
 		name: string;
 		points: Point[];
 		color?: string;
+		id?: string;
 	}
 	interface Props {
 		series: Series[];
@@ -80,7 +86,7 @@
 					style="--series-color: {colorFor(series[0], 0)}"
 				/>
 			{/if}
-			{#each series as s, i (s.name)}
+			{#each series as s, i (s.id ?? s.name)}
 				<path
 					class="line"
 					d={toPath(s.points, bounds, W, H, PAD)}
@@ -96,7 +102,7 @@
 		{/if}
 		{#if multi}
 			<ul class="legend">
-				{#each series as s, i (s.name)}
+				{#each series as s, i (s.id ?? s.name)}
 					<li><span class="swatch" style="background: {colorFor(s, i)}"></span>{s.name}</li>
 				{/each}
 			</ul>

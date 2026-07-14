@@ -1,7 +1,7 @@
 <!-- FormulaCell.svelte -->
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { getWorkspace } from '$lib/workspace/workspace.svelte';
+	import { getWorkspace, newId } from '$lib/workspace/workspace.svelte';
 	import { evaluate, getReferencedVars } from '$lib/formula';
 	import { sweepFormula, defaultXVar } from '$lib/workspace/curve';
 	import type { FormulaCell } from '$lib/workspace/types';
@@ -70,7 +70,7 @@
 		if (name === '' || expr === '') return;
 		const existing = ws.functions.find((f) => f.name.trim() === name);
 		if (existing) existing.expr = expr;
-		else ws.functions.push({ name, expr, params: '' });
+		else ws.functions.push({ id: newId('fn'), name, expr, params: '' });
 		ws.refreshDerivedVars();
 		ws.persistFunctions();
 		saveName = '';
@@ -101,7 +101,11 @@
 		{/if}
 
 		{#if effectiveXVar && curve.length > 0}
-			<LineChart series={[{ name: cell.expr, points: curve }]} fillArea xLabel={effectiveXVar} />
+			<LineChart
+				series={[{ id: cell.id, name: cell.expr, points: curve }]}
+				fillArea
+				xLabel={effectiveXVar}
+			/>
 		{/if}
 
 		{#if refs.length > 0}

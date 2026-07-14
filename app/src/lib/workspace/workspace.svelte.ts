@@ -44,7 +44,7 @@ export interface Workspace {
 
 export function createWorkspace(): Workspace {
 	const variables = $state<VarRow[]>([{ id: uid('var'), name: '', value: '' }]);
-	const functions = $state<CustomFnRow[]>([{ name: '', expr: '', params: '' }]);
+	const functions = $state<CustomFnRow[]>([{ id: uid('fn'), name: '', expr: '', params: '' }]);
 	const cells = $state<Cell[]>([makeCell('formula')]);
 
 	// Debounced mirrors of `variables`/`functions` so that the expensive
@@ -90,9 +90,14 @@ export function createWorkspace(): Workspace {
 			functions.splice(
 				0,
 				functions.length,
-				...parsed.map((f) => ({ name: f.name ?? '', expr: f.expr ?? '', params: f.params ?? '' }))
+				...parsed.map((f) => ({
+					id: uid('fn'),
+					name: f.name ?? '',
+					expr: f.expr ?? '',
+					params: f.params ?? ''
+				}))
 			);
-			if (functions.length === 0) functions.push({ name: '', expr: '', params: '' });
+			if (functions.length === 0) functions.push({ id: uid('fn'), name: '', expr: '', params: '' });
 		} catch {
 			// Silent fail on corrupted localStorage
 			return;
@@ -122,7 +127,7 @@ export function createWorkspace(): Workspace {
 			variables.splice(i, 1);
 		},
 		addFunction() {
-			functions.push({ name: '', expr: '', params: '' });
+			functions.push({ id: uid('fn'), name: '', expr: '', params: '' });
 		},
 		removeFunction(i: number) {
 			functions.splice(i, 1);
