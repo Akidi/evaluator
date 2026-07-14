@@ -1,9 +1,11 @@
 <!-- StepperCell.svelte -->
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { getWorkspace, newId } from '$lib/workspace/workspace.svelte';
 	import { runStepper } from '$lib/formula';
 	import { stepperSeries } from '$lib/workspace/curve';
 	import type { StepperCell } from '$lib/workspace/types';
+	import type { RuleRow } from '$lib/formula';
 	import { LineChart, FormField, Card } from '$lib/components/molecules';
 	import {
 		Button,
@@ -24,7 +26,37 @@
 
 	const ws = getWorkspace();
 
-	let outcome = $derived(runStepper(cell.rules, Math.min(cell.steps, 500), ws.variables, ws.functions));
+	// Debounce the (potentially 500-step) stepper run so it doesn't re-run
+	// synchronously on every keystroke in a rule's inc/div field or the steps
+	// field. The rules editor itself (add/remove/reorder, variable picker,
+	// bind:value inputs below) stays fully live/responsive.
+	let debouncedRules = $state<RuleRow[]>(untrack(() => cell.rules.map((r) => ({ ...r }))));
+	let debouncedSteps = $state(untrack(() => cell.steps));
+	let rulesStepsTimer: ReturnType<typeof setTimeout>;
+	$effect(() => {
+		const nextRules = cell.rules.map((r) => ({
+			id: r.id,
+			variable: r.variable,
+			inc: r.inc,
+			div: r.div
+		}));
+		const nextSteps = cell.steps;
+		clearTimeout(rulesStepsTimer);
+		rulesStepsTimer = setTimeout(() => {
+			debouncedRules = nextRules;
+			debouncedSteps = nextSteps;
+		}, 120);
+		return () => clearTimeout(rulesStepsTimer);
+	});
+
+	let outcome = $derived(
+		runStepper(
+			debouncedRules,
+			Math.min(debouncedSteps, 500),
+			ws.debouncedVariables,
+			ws.debouncedFunctions
+		)
+	);
 	let series = $derived(outcome.ok ? stepperSeries(outcome.result.timeline) : []);
 	let varNames = $derived(series.map((s) => s.name));
 

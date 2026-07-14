@@ -27,6 +27,8 @@ function makeCell(type: 'formula' | 'stepper'): Cell {
 export interface Workspace {
 	readonly variables: VarRow[];
 	readonly functions: CustomFnRow[];
+	readonly debouncedVariables: VarRow[];
+	readonly debouncedFunctions: CustomFnRow[];
 	readonly cells: Cell[];
 	addVariable(): void;
 	removeVariable(i: number): void;
@@ -44,6 +46,34 @@ export function createWorkspace(): Workspace {
 	const variables = $state<VarRow[]>([{ id: uid('var'), name: '', value: '' }]);
 	const functions = $state<CustomFnRow[]>([{ name: '', expr: '', params: '' }]);
 	const cells = $state<Cell[]>([makeCell('formula')]);
+
+	// Debounced mirrors of `variables`/`functions` so that the expensive
+	// fan-out (every formula cell re-evaluating + re-sweeping, every stepper
+	// cell re-running) doesn't happen synchronously on every keystroke in the
+	// ScopeBar. UI that binds directly to `variables`/`functions` stays live;
+	// only the per-cell computations should read the debounced copies.
+	const debouncedVariables = $state<VarRow[]>(variables.map((v) => ({ ...v })));
+	const debouncedFunctions = $state<CustomFnRow[]>(functions.map((f) => ({ ...f })));
+	let varsFnsTimer: ReturnType<typeof setTimeout>;
+	// createWorkspace() is called once from Notebook.svelte during component
+	// init, but it's also called directly by unit tests (and could in
+	// principle be called from other non-component code). A bare `$effect`
+	// requires an enclosing effect tree and throws `effect_orphan` outside of
+	// one, so wrap it in `$effect.root()` — the standard Svelte 5 idiom for
+	// effects owned by a non-component module — to make it work regardless of
+	// calling context.
+	$effect.root(() => {
+		$effect(() => {
+			const nextVars = variables.map((v) => ({ ...v }));
+			const nextFns = functions.map((f) => ({ ...f }));
+			clearTimeout(varsFnsTimer);
+			varsFnsTimer = setTimeout(() => {
+				debouncedVariables.splice(0, debouncedVariables.length, ...nextVars);
+				debouncedFunctions.splice(0, debouncedFunctions.length, ...nextFns);
+			}, 120);
+			return () => clearTimeout(varsFnsTimer);
+		});
+	});
 
 	function persistFunctions() {
 		if (!browser) return;
@@ -75,6 +105,12 @@ export function createWorkspace(): Workspace {
 		},
 		get functions() {
 			return functions;
+		},
+		get debouncedVariables() {
+			return debouncedVariables;
+		},
+		get debouncedFunctions() {
+			return debouncedFunctions;
 		},
 		get cells() {
 			return cells;

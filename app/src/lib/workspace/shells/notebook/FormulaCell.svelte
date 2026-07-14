@@ -27,7 +27,9 @@
 	});
 
 	let result = $derived(
-		debouncedExpr.trim() === '' ? null : evaluate(debouncedExpr, ws.variables, ws.functions)
+		debouncedExpr.trim() === ''
+			? null
+			: evaluate(debouncedExpr, ws.debouncedVariables, ws.debouncedFunctions)
 	);
 	let refs = $derived(getReferencedVars(debouncedExpr));
 
@@ -40,8 +42,26 @@
 		cell.xVar && refs.includes(cell.xVar) ? cell.xVar : defaultXVar(debouncedExpr)
 	);
 	let xRange = $derived(cell.xRange ?? { min: 1, max: 20 });
+
+	let debouncedXRange = $state(untrack(() => xRange));
+	let xRangeTimer: ReturnType<typeof setTimeout>;
+	$effect(() => {
+		const next = { min: xRange.min, max: xRange.max };
+		clearTimeout(xRangeTimer);
+		xRangeTimer = setTimeout(() => (debouncedXRange = next), 120);
+		return () => clearTimeout(xRangeTimer);
+	});
+
 	let curve = $derived(
-		effectiveXVar ? sweepFormula(debouncedExpr, ws.variables, ws.functions, effectiveXVar, xRange) : []
+		effectiveXVar
+			? sweepFormula(
+					debouncedExpr,
+					ws.debouncedVariables,
+					ws.debouncedFunctions,
+					effectiveXVar,
+					debouncedXRange
+				)
+			: []
 	);
 
 	function saveAsFunction() {
