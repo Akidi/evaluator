@@ -25,13 +25,13 @@ export class Lexer implements ILexer {
   constructor(private cursor: ICursor = new Cursor()) {}
 
   scan(src: string): Token[] {
-    this.cursor.setSource(src);
+    this.cursor.reset(src);
     const tokens: Token[] = [];
     let c: string | undefined;
     while ((c = this.cursor.current()) !== undefined) {
-      const rule = this.rules.find((r) => r.match(this.cursor));
+      const rule = this.rules.find((r) => r.match(this.cursor, c));
       if (!rule) throw new UnknownCharacterError(c, this.cursor.column());
-      const token = rule.scan(this.cursor);
+      const token = rule.scan(this.cursor, c);
       if (token) tokens.push(token);
     }
     tokens.push({

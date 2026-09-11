@@ -13,7 +13,8 @@ export class Stepper implements IStepper {
   run(spec: string): StepResult {
     let specs: string[] = spec.split(';');
     let steps: number = Number(specs.pop());
-    let rules: Rule[] = specs.map(rule => { const [variable, stepInc, stepDiv] = rule.split('|').map(s => s.trim()); return { variable, stepInc, stepDiv: stepDiv } });
+    let rules: Rule[] = specs.map(rule => { const [variable, stepInc, stepDiv, noInc] = rule.split('|').map(s => s.trim()); return { variable, stepInc, stepDiv, noInc  } });
+    console.log(specs, rules)
     return this.step(rules, steps);
   }
 
@@ -22,11 +23,11 @@ export class Stepper implements IStepper {
     for (let i = 0; i <= steps; i++) {
       let vars: Record<string, number> = {}
       rules.forEach(rule => {
-        const { variable, stepInc, stepDiv } = rule;
+        const { variable, stepInc, stepDiv, noInc } = rule;
         const currentVal = this.evaluator.getVar(variable);
         if (currentVal === undefined) throw new UndefinedVariableError(variable);
         vars[variable] = currentVal;
-        if (i !== 0 && i % Number(stepDiv) === 0) {
+        if (i !== 0 && i % Number(stepDiv) === 0 && !(noInc === 'false')) {
           vars[variable] = currentVal + Number(this.formulate.run(stepInc));
         }
         this.evaluator.setVar(variable, vars[variable]);

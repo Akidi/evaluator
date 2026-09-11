@@ -1,5 +1,5 @@
 import type { ICursor } from "../cursor";
-import { type Token, type RelOp, MAX_RELOP_LEN, RELOP_BY_LEN } from "../token";
+import { type Token, type RelOp, RELOPS_BY_MUNCH } from "../token";
 import type { TokenRule } from "./types";
 
 export class RelOpRule implements TokenRule {
@@ -21,23 +21,10 @@ export class RelOpRule implements TokenRule {
     return { kind, position: { start, end: cursor.column(), line } };
   }
 
-  // maximal munch: try the longest operator first so `<=` beats `<`
+  // maximal munch: RELOPS_BY_MUNCH is longest-first, so the first hit wins
   private longest(cursor: ICursor): [RelOp["kind"], number] | undefined {
-    const c = cursor.current();
-    if (c === undefined) return undefined;
-
-    for (let len = MAX_RELOP_LEN; len >= 1; len--) {
-      let slice = c;
-      let complete = true;
-      for (let i = 1; i < len; i++) {
-        const ch = cursor.peek(i);
-        if (ch === undefined) { complete = false; break; }
-        slice += ch;
-      }
-      if (!complete) continue;
-
-      const kind = RELOP_BY_LEN.get(len)?.[slice];
-      if (kind) return [kind, len];
+    for (const { chars, kind } of RELOPS_BY_MUNCH) {
+      if (cursor.startsWith(chars)) return [kind, chars.length];
     }
     return undefined;
   }

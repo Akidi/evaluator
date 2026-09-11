@@ -8,14 +8,13 @@ const PUNCT = Object.fromEntries(
 ) as Record<string, Punct["kind"]>;
 
 export class PunctRule implements TokenRule {
-  match(cur: ICursor) {
-    const c = cur.current();
+  match(cur: ICursor, c: string) {
     return c !== undefined && c in PUNCT;
   }
-  scan(cur: ICursor): Token {
+  scan(cur: ICursor, c: string): Token {
     const start = cur.column(),
       line = cur.line();
-    const kind = PUNCT[cur.current()!];
+    const kind = PUNCT[c];
     cur.advance();
     return { kind, position: { start, end: cur.column(), line } };
   }

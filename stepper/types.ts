@@ -4,5 +4,6 @@ export type Rule = {
   variable: string,
   stepInc: string,
   stepDiv: string,
+  noInc: string;
 }
 export interface IStepper { run(spec: string): StepResult; }

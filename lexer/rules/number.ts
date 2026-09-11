@@ -5,16 +5,14 @@ import { isDigit } from "./shared";
 import type { TokenRule } from "./types";
 
 export class NumberRule implements TokenRule {
-  match(cur: ICursor): boolean {
-    const c = cur.current();
+  match(cur: ICursor, c: string): boolean {
     return c !== undefined && isDigit(c);
   }
-  scan(cur: ICursor): Token {
+  scan(cur: ICursor, c: string): Token {
     let start: number = cur.column();
     let line: number = cur.line();
     let isFloat: boolean = false;
-    // match() guarantees a current char here
-    let value = cur.current()!;
+    let value = c
     cur.advance();
     let next: string | undefined;
     while ((next = cur.current()) !== undefined) {

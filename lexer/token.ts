@@ -55,18 +55,10 @@ export const RELOPS: { chars: string; kind: RelOp['kind'] }[] = [
   { chars: ':', kind: 'COLON' },
 ];
 
-export const RELOP_BY_LEN: ReadonlyMap<number, Record<string, RelOp['kind']>> = (() => {
-  const byLen = new Map<number, Record<string, RelOp['kind']>>();
-  for (const { chars, kind } of RELOPS) {
-    const bucket = byLen.get(chars.length) ?? {};
-    bucket[chars] = kind;
-    byLen.set(chars.length, bucket);
-  }
-  return byLen;
-})();
+export const RELOPS_BY_MUNCH: readonly { chars: string; kind: RelOp['kind'] }[] =
+  [...RELOPS].sort((a, b) => b.chars.length - a.chars.length);
 
-export const MAX_RELOP_LEN = Math.max(...RELOP_BY_LEN.keys());
-
+  
 export type Position = { start: number, end: number, line: number; }
 export type Ident = { kind: 'IDENT', name: string; };
 export type Num = { kind: 'NUM', value: number; };

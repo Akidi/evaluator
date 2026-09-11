@@ -1,13 +1,13 @@
 import { CursorSourceError } from "./errors";
 
 export interface ICursor {
-  getSource: () => string | undefined;
-  setSource: (src: string) => void;
+  reset: (src: string) => void;
   current: () => string | undefined;
   peek: (offset?: number) => string | undefined;
   advance: (num?: number) => void;
   column: () => number;
   line: () => number;
+  startsWith: (s: string) => boolean;
 }
 
 export class Cursor implements ICursor {
@@ -15,17 +15,13 @@ export class Cursor implements ICursor {
   private src: string | undefined;
   private lineNo = 1;
 
-  setSource(src: string) {
+  reset(src: string) {
     this.index = 0;
     this.lineNo = 1;
     this.src = src;
   }
 
-  getSource(): string | undefined {
-    return this.src;
-  }
-
-  current() {
+  current(): string | undefined {
     if (this.src === undefined) throw new CursorSourceError();
     return this.src[this.index];
   }
@@ -50,5 +46,10 @@ export class Cursor implements ICursor {
 
   line() {
     return this.lineNo;
+  }
+
+  startsWith(s: string): boolean {
+    if (this.src === undefined) throw new CursorSourceError();
+    return this.src.startsWith(s, this.index);
   }
 }
