@@ -1,7 +1,7 @@
 # ADR 0001 — How the Stepper consumes the Evaluator
 
 **Date:** 2026-06-30
-**Status:** Accepted
+**Status:** Accepted — Decision #3 (scoped evaluation) realized in [ADR 0002](0002-scoped-evaluation.md)
 
 Related: [Stepper Syntax Design](../superpowers/specs/2026-06-29-stepper-syntax-design.md)
 
@@ -68,5 +68,5 @@ Stepper on the current API first. Specifically:
 
 ## Status of follow-ups
 
-- [ ] `getVar` on Evaluator — in progress
-- [ ] Scoped `evaluate(ast, identList?, scope?)` — deferred until Stepper is working
+- [x] `getVar` on Evaluator — done
+- [x] Scoped `evaluate(ast, identList?, scope?)` — done; see [ADR 0002](0002-scoped-evaluation.md)
