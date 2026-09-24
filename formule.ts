@@ -1,5 +1,5 @@
 import { Evaluator } from "./evaluator/evaluator";
-import type { IEvaluator } from "./evaluator/types";
+import type { IEvaluator, Scope } from "./evaluator/types";
 import { Lexer } from "./lexer/lexer";
 import type { ILexer } from "./lexer/types";
 import { Parser } from "./parser/parser";
@@ -9,16 +9,16 @@ const lexer = new Lexer();
 const parser = new Parser();
 
 export interface IFormulate {
-  run: (formulae: string) => boolean | number;
+  run: (formulae: string, scope?: Scope) => boolean | number;
 }
 
 export class Formulate implements IFormulate {
   lexer: ILexer = lexer;
   parser: IParser = parser;
   constructor(private evaluator: IEvaluator = new Evaluator()) {}
-  run(formulae: string): boolean | number {
+  run(formulae: string, scope?: Scope): boolean | number {
     const tokens = lexer.scan(formulae);
     const [ast, identList] = parser.parse(tokens);
-    return this.evaluator.evaluate(ast, identList);
+    return this.evaluator.evaluate(ast, identList, scope);
   }
 }
