@@ -1,5 +1,5 @@
 import type { IdentItem, Node } from "../parser/types";
-import type { CompareFn, EvalFn, FnEnv, IEvaluator, MathFn, VarEnv } from "./types";
+import type { CompareFn, EvalFn, FnEnv, IEvaluator, MathFn, Scope, VarEnv } from "./types";
 import {
   ArityMismatchError,
   DivisionByZeroError,
@@ -71,8 +71,8 @@ export class Evaluator implements IEvaluator {
     ["GTE", (a, b) => a >= b],
   ]);
 
-  private evalNumber(node: Node, fnName: string): number {
-    const value = this.evalNode(node);
+  private evalNumber(node: Node, fnName: string, scope?: Scope): number {
+    const value = this.evalNode(node, scope);
     if (typeof value !== "number") {
       throw new InvalidOperandError(fnName, "number");
     }
@@ -101,14 +101,14 @@ export class Evaluator implements IEvaluator {
     this.fns.set(name, { fn, arity, variadic });
   }
 
-  evaluate(ast: Node, identList?: IdentItem[]): number | boolean {
-    if (identList !== undefined) this.validate(identList);
-    return this.evalNode(ast);
+  evaluate(ast: Node, identList?: IdentItem[], scope?: Scope): number | boolean {
+    if (identList !== undefined) this.validate(identList, scope);
+    return this.evalNode(ast, scope);
   }
 
-  private validate(identList: IdentItem[]): void {
+  private validate(identList: IdentItem[], scope?: Scope): void {
     for (const ident of identList) {
-      if (ident.type === "VAR" && !this.vars.has(ident.name)) {
+      if (ident.type === "VAR" && !(scope?.has(ident.name) || this.vars.has(ident.name))) {
         throw new UndefinedVariableError(ident.name);
       }
       if (ident.type === "FN" && !this.fns.has(ident.name)) {
@@ -117,19 +117,19 @@ export class Evaluator implements IEvaluator {
     }
   }
 
-  private evalNode(ast: Node): number | boolean {
+  private evalNode(ast: Node, scope?: Scope): number | boolean {
     switch (ast.type) {
       case "Num":
         return ast.value;
       case "Ident": {
-        const value = this.vars.get(ast.name);
+        const value = scope?.has(ast.name) ? scope.get(ast.name) : this.vars.get(ast.name);
         if (value === undefined) {
           throw new UndefinedVariableError(ast.name);
         }
         return value;
       }
       case "Unary": {
-        let result = this.evaluate(ast.operand);
+        let result = this.evaluate(ast.operand, undefined, scope);
         if (ast.op === "MINUS" && typeof result === "number") return -result;
         if (ast.op === "NOT" && typeof result === "boolean") return !result;
 
@@ -140,20 +140,20 @@ export class Evaluator implements IEvaluator {
       }
       case "Binary": {
         if (ast.op === "AND" || ast.op === "OR") {
-          const left = this.evaluate(ast.left);
+          const left = this.evaluate(ast.left, undefined, scope);
           if (typeof left !== "boolean")
             throw new InvalidOperandError(ast.op, "boolean");
           if ((ast.op === "AND" && !left) || (ast.op === "OR" && left))
             return left;
-          const right = this.evaluate(ast.right);
+          const right = this.evaluate(ast.right, undefined, scope);
           if (typeof right !== "boolean")
             throw new InvalidOperandError(ast.op, "boolean");
           return right;
         }
         const math_op = this.MATH_OPS.get(ast.op);
         const comp_op = this.COMP_OPS.get(ast.op);
-        const left = this.evaluate(ast.left);
-        const right = this.evaluate(ast.right);
+        const left = this.evaluate(ast.left, undefined, scope);
+        const right = this.evaluate(ast.right, undefined, scope);
         if (ast.op === "SLASH" || ast.op === "PERCENT") {
           if (left === 0) throw new DivisionByZeroError(ast.left);
           if (right === 0) throw new DivisionByZeroError(ast.right);
@@ -188,15 +188,15 @@ export class Evaluator implements IEvaluator {
             ast.args.length,
           );
         }
-        return entry.fn(...ast.args.map(node => this.evalNumber(node, ast.callee.name)));
+        return entry.fn(...ast.args.map(node => this.evalNumber(node, ast.callee.name, scope)));
       }
 
       case "Ternary": {
-        const test = this.evaluate(ast.test);
+        const test = this.evaluate(ast.test, undefined, scope);
         if (typeof test === "number")
           throw new InvalidOperandError(ast.type, "boolean");
-        if (!test) return this.evaluate(ast.ifFalse);
-        return this.evaluate(ast.ifTrue);
+        if (!test) return this.evaluate(ast.ifFalse, undefined, scope);
+        return this.evaluate(ast.ifTrue, undefined, scope);
       }
     }
   }
