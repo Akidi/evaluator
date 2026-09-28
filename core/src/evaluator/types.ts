@@ -10,7 +10,7 @@ export interface IEvaluator {
 
 export type EvalFn = (...args: number[]) => number | boolean;
 export type VarEnv = Map<string, number>;
-export type Scope = ReadonlyMap<string, number>
+export type Scope = ReadonlyMap<string, number | FnEntry >
 export type FnEntry = { fn: EvalFn; arity: number; variadic?: boolean };
 export type FnEnv = Map<string, FnEntry>;
 

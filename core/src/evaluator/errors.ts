@@ -19,6 +19,18 @@ export class UndefinedFunctionError extends EvaluatorError {
   }
 }
 
+export class InvalidFunctionEntryError extends EvaluatorError {
+  constructor(fn: string) {
+    super(`Function ${fn} is defined but not the correct format.`)
+  }
+}
+
+export class ShadowsBuiltinFunctionError extends EvaluatorError {
+  constructor(fn: string) {
+    super(`Function ${fn} is defined but shadows a built-in. Please provide a different name`)
+  }
+}
+
 export class InvalidOperandError extends EvaluatorError {
   constructor(op: string, expected: string) {
     super(`Operand for ${op} must be ${expected}.`);

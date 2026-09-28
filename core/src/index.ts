@@ -13,7 +13,7 @@ export { Stepper } from "./stepper/stepper";
 // Types
 export type { ILexer } from "./lexer/types";
 export type { IParser } from "./parser/types";
-export type { IEvaluator, Scope, EvalFn } from "./evaluator/types";
+export type { IEvaluator, Scope, EvalFn, FnEntry } from "./evaluator/types";
 export type { IStepper, Rule, Snapshot, StepResult } from "./stepper/types";
 
 // Errors

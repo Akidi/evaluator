@@ -5,7 +5,9 @@ packages:
 allowBuilds:
   '@prisma/client': false
   '@tailwindcss/oxide': true
-  better-sqlite3: true
+  # Ships Node-API prebuilds (prebuilds/win32-x64.node, NAPI 10); its binding.gyp
+  # is a no-op when a prebuild matches the host, so skip the implicit node-gyp rebuild.
+  better-sqlite3: false
   esbuild: true
 
 engineStrict: true

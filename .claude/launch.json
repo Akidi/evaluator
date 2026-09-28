@@ -7,6 +7,13 @@
       "runtimeArgs": ["--filter", "app", "dev"],
       "port": 5173,
       "autoPort": true
+    },
+    {
+      "name": "ui-dev",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "ui", "exec", "vite", "dev", "--port", "4317", "--strictPort"],
+      "port": 4317,
+      "autoPort": false
     }
   ]
 }

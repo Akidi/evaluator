@@ -5,7 +5,9 @@ import {
   DivisionByZeroError,
   EvaluatorError,
   FunctionRedefinitionError,
+  InvalidFunctionEntryError,
   InvalidOperandError,
+  ShadowsBuiltinFunctionError,
   UndefinedFunctionError,
   UndefinedVariableError,
 } from "./errors";
@@ -111,7 +113,7 @@ export class Evaluator implements IEvaluator {
       if (ident.type === "VAR" && !(scope?.has(ident.name) || this.vars.has(ident.name))) {
         throw new UndefinedVariableError(ident.name);
       }
-      if (ident.type === "FN" && !this.fns.has(ident.name)) {
+      if (ident.type === "FN" && !(scope?.has(ident.name) || this.fns.has(ident.name))) {
         throw new UndefinedFunctionError(ident.name);
       }
     }
@@ -123,7 +125,7 @@ export class Evaluator implements IEvaluator {
         return ast.value;
       case "Ident": {
         const value = scope?.has(ast.name) ? scope.get(ast.name) : this.vars.get(ast.name);
-        if (value === undefined) {
+        if (value === undefined || typeof value !== 'number') {
           throw new UndefinedVariableError(ast.name);
         }
         return value;
@@ -175,9 +177,13 @@ export class Evaluator implements IEvaluator {
         throw new EvaluatorError(`Unhandled Binary type: ${ast.op}`);
       }
       case "Call": {
-        const entry = this.fns.get(ast.callee.name);
+        if (this.fns.has(ast.callee.name) && scope?.has(ast.callee.name)) 
+          throw new ShadowsBuiltinFunctionError(ast.callee.name);
+        const entry = scope?.has(ast.callee.name) ? scope.get(ast.callee.name) : this.fns.get(ast.callee.name);
         if (entry === undefined)
           throw new UndefinedFunctionError(ast.callee.name);
+        if (typeof entry === 'number')
+          throw new InvalidFunctionEntryError(ast.callee.name);
         const arityMatches = entry.variadic
           ? ast.args.length >= entry.arity
           : ast.args.length === entry.arity;
