@@ -9,4 +9,4 @@ export type ScopeFnRow = {
 	body: string;
 	enabled: boolean;
 };
-export type Row = ScopeRow[] | ScopeFnRow[];
+export type Row = ScopeRow | ScopeFnRow;

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Heading, Checkbox, Input, Button, FormField, Text, Table } from '@wildmuse/ui';
+	import { Heading, Button, FormField, Text } from '@wildmuse/ui';
 	import type { IPlayground } from './playground.svelte';
 	import EvalTable from './EvalTable.svelte';
 
@@ -8,7 +8,6 @@
 	}
 
 	interface VarRow {
-
 		name: string;
 		value: string;
 	}
@@ -20,9 +19,9 @@
 		name: '',
 		value: ''
 	});
-	const headers = ["enabled", "name", "value"];
+	const headers = ['name', 'value'];
 
-	let newVarRow = $state<VarRow>({...defaultVar});
+	let newVarRow = $state<VarRow>({ ...defaultVar });
 </script>
 
 <section class="panel">
@@ -33,56 +32,59 @@
 		>
 	</header>
 
-<EvalTable {headers} rows={pg.varRows}>
-{#snippet rowSnippet(r: VarRow)}
-	<td class="c-active">
-		<Checkbox
-							bind:checked={r.enabled}
-							aria-label={`Toggle ${row.name || 'variable'}`}
-						/>
-					</td>
-					<td>
-						<Input
-							bind:value={r.name}
-							showIcon={false}
-							placeholder="name"
-							aria-label="Variable name"
-						/>
-					</td>
-					<td class="c-value">
-						<Input
-							inputType="number"
-							bind:value={r.value}
-							showIcon={false}
-							placeholder="0"
-							aria-label="Variable value"
-							aria-invalid={row.enabled && !Number.isFinite(Number(row.value))}
-						/>
-					</td>
-					<td class="c-remove">
-						<Button
-							variant="ghost"
-							aria-label={`Remove ${row.name || 'variable'}`}
-							onclick={() => {
-								const id = row.id;
-                pg.removeVar(id);
-							}}>✕</Button
-						>
-					</td>
-					{/snippet}
-				</EvalTable>
-					
-					<form
+	<EvalTable getRows="var" {pg} {headers} />
+
+	<form
+		class="add"
 		onsubmit={(e) => {
 			e.preventDefault();
 			pg.addVar(newVarRow.name, newVarRow.value);
-			newVarRow = {...defaultVar};
+			newVarRow = { ...defaultVar };
 		}}
 	>
-		<FormField label="Name" bind:value={newVarRow.name} placeholder="e.g. LEVEL" />
-		<FormField label="Value" type="number" bind:value={newVarRow.value} placeholder="e.g. 5" />
+		<div class="add__fields">
+			<FormField label="Name" bind:value={newVarRow.name} placeholder="e.g. LEVEL" />
+			<FormField label="Value" type="number" bind:value={newVarRow.value} placeholder="e.g. 5" />
+		</div>
 		<Button type="submit" variant="primary" disabled={newVarRow.name.trim() === ''}
 			>Add variable</Button
 		>
 	</form>
 </section>
+
+<style>
+	.panel {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.panel__head {
+		display: flex;
+		flex-direction: column;
+		gap: 0.2rem;
+	}
+
+	.add {
+		--add-border: var(--color-border, color-mix(in srgb, currentColor 16%, transparent));
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-end;
+		gap: 0.75rem;
+		padding: 0.9rem 1rem;
+		border: 1px dashed var(--add-border);
+		border-radius: 0.625rem;
+		background: color-mix(in srgb, currentColor 3%, transparent);
+	}
+
+	.add__fields {
+		flex: 1 1 18rem;
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+		gap: 0.75rem;
+	}
+
+	.add :global(button[type='submit']) {
+		flex: 0 0 auto;
+	}
+</style>
