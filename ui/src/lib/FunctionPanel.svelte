@@ -15,9 +15,10 @@
   }
 
   const defaultFnRow: FnRow = Object.freeze({
-    name: "",
-    params: "",
-    body: "",
+    kind: 'fn',
+    name: '',
+    params: '',
+    body: '',
   });
 
   let newFnRow = $state<FnRow>({...defaultFnRow});
@@ -37,7 +38,7 @@
         </tr>
       </thead>
       <tbody>
-        {#each pg.fnRows as row, i (row.id)}
+        {#each pg.fnRows as row (row.id)}
         <tr class:is-disabled={!row.enabled}>
           <td class="c-active">
             <Checkbox

@@ -1,12 +1,14 @@
 <script lang="ts">
 	import { Heading, Checkbox, Input, Button, FormField, Text, Table } from '@wildmuse/ui';
 	import type { IPlayground } from './playground.svelte';
+	import EvalTable from './EvalTable.svelte';
 
 	interface Props {
 		pg: IPlayground;
 	}
 
 	interface VarRow {
+
 		name: string;
 		value: string;
 	}
@@ -14,9 +16,11 @@
 	let { pg }: Props = $props();
 
 	const defaultVar: VarRow = Object.freeze({
+		kind: 'var',
 		name: '',
 		value: ''
 	});
+	const headers = ["enabled", "name", "value"];
 
 	let newVarRow = $state<VarRow>({...defaultVar});
 </script>
@@ -29,27 +33,17 @@
 		>
 	</header>
 
-	<Table>
-		<thead>
-			<tr>
-				<th scope="col" class="c-active">Active</th>
-				<th scope="col">Name</th>
-				<th scope="col" class="c-value">Value</th>
-				<th scope="col" class="c-remove"><span class="sr-only">Remove</span></th>
-			</tr>
-		</thead>
-		<tbody>
-			{#each pg.varRows as row, i (row.id)}
-				<tr class:is-disabled={!row.enabled}>
-					<td class="c-active">
-						<Checkbox
-							bind:checked={pg.varRows[i].enabled}
+<EvalTable {headers} rows={pg.varRows}>
+{#snippet rowSnippet(r: VarRow)}
+	<td class="c-active">
+		<Checkbox
+							bind:checked={r.enabled}
 							aria-label={`Toggle ${row.name || 'variable'}`}
 						/>
 					</td>
 					<td>
 						<Input
-							bind:value={pg.varRows[i].name}
+							bind:value={r.name}
 							showIcon={false}
 							placeholder="name"
 							aria-label="Variable name"
@@ -58,7 +52,7 @@
 					<td class="c-value">
 						<Input
 							inputType="number"
-							bind:value={pg.varRows[i].value}
+							bind:value={r.value}
 							showIcon={false}
 							placeholder="0"
 							aria-label="Variable value"
@@ -75,18 +69,10 @@
 							}}>✕</Button
 						>
 					</td>
-				</tr>
-			{:else}
-				<tr>
-					<td colspan="4" class="empty">
-						<Text as="span" color="faint">No variables yet — add one below.</Text>
-					</td>
-				</tr>
-			{/each}
-		</tbody>
-	</Table>
-
-	<form
+					{/snippet}
+				</EvalTable>
+					
+					<form
 		onsubmit={(e) => {
 			e.preventDefault();
 			pg.addVar(newVarRow.name, newVarRow.value);
